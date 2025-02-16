@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dream Together</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #D0E8FF;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
+            margin: auto;
+        }
+
+        .dream-board {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .dream {
+            background: #fff;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
+            width: 150px;
+            text-align: center;
+            position: relative;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .dream img {
+            width: 100%;
+            border-radius: 5px;
+        }
+
+        .dream p {
+            font-style: italic;
+            color: #555;
+        }
+
+        .completed {
+            background: #A7D397;
+            border: 2px solid green;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🎨 Dream Together 🌟</h2>
+        <p>Buat papan impian bersama!</p>
+
+        <input type="file" id="dreamImage" accept="image/*">
+        <textarea id="dreamText" placeholder="Tulis impian..."></textarea>
+        <button onclick="saveDream()">Tambahkan Impian</button>
+        <button onclick="showDailyMotivation()">🌟 Daily Motivation</button>
+        <button onclick="clearDreams()">🗑️ Hapus Semua</button>
+
+        <h3>Papan Impian:</h3>
+        <div id="dreamBoard" class="dream-board"></div>
+    </div>
+
+    <script>
+        let dreams = JSON.parse(localStorage.getItem("dreams")) || [];
+
+        function saveDream() {
+            let image = document.getElementById("dreamImage").files[0];
+            let text = document.getElementById("dreamText").value;
+
+            if (!image || text.trim() === "") {
+                alert("Tambahkan gambar dan impian dulu!");
+                return;
+            }
+
+            let reader = new FileReader();
+            reader.onload = function(event) {
+                let imageUrl = event.target.result;
+                let dreamData = { image: imageUrl, text: text, completed: false };
+
+                dreams.push(dreamData);
+                localStorage.setItem("dreams", JSON.stringify(dreams));
+                displayDream(dreamData);
+
+                document.getElementById("dreamImage").value = "";
+                document.getElementById("dreamText").value = "";
+            };
+            reader.readAsDataURL(image);
+        }
+
+        function displayDream(dreamData, index) {
+            let dreamDiv = document.createElement("div");
+            dreamDiv.classList.add("dream");
+            if (dreamData.completed) dreamDiv.classList.add("completed");
+
+            dreamDiv.innerHTML = `
+                <img src="${dreamData.image}" alt="Impian">
+                <p>${dreamData.text}</p>
+                <button onclick="markAsCompleted(${index})">✅ Tercapai</button>
+            `;
+
+            document.getElementById("dreamBoard").appendChild(dreamDiv);
+        }
+
+        function markAsCompleted(index) {
+            dreams[index].completed = true;
+            localStorage.setItem("dreams", JSON.stringify(dreams));
+            document.getElementById("dreamBoard").innerHTML = "";
+            loadDreams();
+            showConfetti();
+        }
+
+        function showConfetti() {
+            let confetti = document.createElement("div");
+            confetti.innerHTML = "🎉✨";
+            confetti.style.position = "fixed";
+            confetti.style.top = "50%";
+            confetti.style.left = "50%";
+            confetti.style.transform = "translate(-50%, -50%)";
+            confetti.style.fontSize = "50px";
+            confetti.style.animation = "fadeOut 1.5s forwards";
+            document.body.appendChild(confetti);
+
+            setTimeout(() => {
+                confetti.remove();
+            }, 1500);
+        }
+
+        function loadDreams() {
+            document.getElementById("dreamBoard").innerHTML = "";
+            dreams.forEach((dream, index) => displayDream(dream, index));
+        }
+
+        function showDailyMotivation() {
+            if (dreams.length === 0) {
+                alert("Belum ada impian yang disimpan.");
+                return;
+            }
+
+            let randomIndex = Math.floor(Math.random() * dreams.length);
+            let randomDream = dreams[randomIndex];
+
+            alert("🌟 Daily Motivation: " + randomDream.text);
+        }
+
+        function clearDreams() {
+            localStorage.removeItem("dreams");
+            dreams = [];
+            document.getElementById("dreamBoard").innerHTML = "";
+            alert("Semua impian telah dihapus!");
+        }
+
+        window.onload = loadDreams;
+    </script>
+
+</body>
+</html>

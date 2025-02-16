@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our memories</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #D0E8FF;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 450px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
+            margin: auto;
+        }
+
+        .memory {
+            background: #fff;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            position: relative;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .memory img {
+            width: 100%;
+            border-radius: 5px;
+        }
+
+        .memory p {
+            font-style: italic;
+            color: #555;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📖 Our Story 📸</h2>
+        <p>Tambahkan kenangan indah dengan cerita!</p>
+
+        <input type="file" id="photoUpload" accept="image/*">
+        <textarea id="photoStory" placeholder="Tulis cerita singkat..."></textarea>
+        <button onclick="saveMemory()">Simpan Kenangan</button>
+        <button onclick="showRandomMemory()">🔄 Random Memory</button>
+
+        <h3>Album Kenangan:</h3>
+        <div id="memoryGallery"></div>
+    </div>
+
+    <script>
+        let memories = [];
+
+        function saveMemory() {
+            let photo = document.getElementById("photoUpload").files[0];
+            let story = document.getElementById("photoStory").value;
+
+            if (!photo || story.trim() === "") {
+                alert("Tambahkan foto dan cerita dulu!");
+                return;
+            }
+
+            let photoURL = URL.createObjectURL(photo);
+            let memoryData = { photo: photoURL, story: story };
+
+            memories.push(memoryData);
+            displayMemory(memoryData);
+
+            document.getElementById("photoUpload").value = "";
+            document.getElementById("photoStory").value = "";
+        }
+
+        function displayMemory(memoryData) {
+            let memoryDiv = document.createElement("div");
+            memoryDiv.classList.add("memory");
+
+            memoryDiv.innerHTML = `<img src="${memoryData.photo}" alt="Kenangan"><p>${memoryData.story}</p>`;
+            document.getElementById("memoryGallery").prepend(memoryDiv);
+        }
+
+        function showRandomMemory() {
+            if (memories.length === 0) {
+                alert("Belum ada kenangan yang disimpan.");
+                return;
+            }
+
+            let randomIndex = Math.floor(Math.random() * memories.length);
+            let randomMemory = memories[randomIndex];
+
+            alert("📸 Random Memory: " + randomMemory.story);
+        }
+    </script>
+
+</body>
+</html>

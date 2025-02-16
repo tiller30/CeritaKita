@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Love Diary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffebf0;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
+            margin: auto;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+        }
+
+        select, input[type="file"] {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        button {
+            background: #ff6b81;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .entry {
+            background: #fff;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            position: relative;
+        }
+
+        .entry img {
+            width: 100%;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        .entry audio {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Love Diary</h2>
+        <p>Cerita harian kita 💕</p>
+
+        <textarea id="diaryText" placeholder="Tulis cerita hari ini..."></textarea>
+        
+        <label for="mood">Pilih Mood:</label>
+        <select id="mood">
+            <option value="😊">😊 Senang</option>
+            <option value="😍">😍 Romantis</option>
+            <option value="😢">😢 Sedih</option>
+            <option value="😡">😡 Kesal</option>
+            <option value="😂">😂 Lucu</option>
+        </select>
+
+        <label for="imageUpload">Tambah Foto:</label>
+        <input type="file" id="imageUpload" accept="image/*">
+
+        <label for="audioUpload">Tambah Suara:</label>
+        <input type="file" id="audioUpload" accept="audio/*">
+
+        <button onclick="saveDiary()">Simpan</button>
+
+        <h3>📖 Catatan Sebelumnya:</h3>
+        <div id="diaryEntries"></div>
+    </div>
+
+    <script>
+        function saveDiary() {
+            let text = document.getElementById("diaryText").value;
+            let mood = document.getElementById("mood").value;
+            let image = document.getElementById("imageUpload").files[0];
+            let audio = document.getElementById("audioUpload").files[0];
+
+            if (text === "") {
+                alert("Tuliskan sesuatu dulu!");
+                return;
+            }
+
+            let entry = {
+                id: new Date().getTime(),
+                text: text,
+                mood: mood,
+                image: image ? URL.createObjectURL(image) : null,
+                audio: audio ? URL.createObjectURL(audio) : null
+            };
+
+            let diaryEntries = JSON.parse(localStorage.getItem("diaryEntries")) || [];
+            diaryEntries.unshift(entry);
+            localStorage.setItem("diaryEntries", JSON.stringify(diaryEntries));
+
+            document.getElementById("diaryText").value = "";
+            document.getElementById("imageUpload").value = "";
+            document.getElementById("audioUpload").value = "";
+
+            displayDiary();
+        }
+
+        function displayDiary() {
+            let diaryEntries = JSON.parse(localStorage.getItem("diaryEntries")) || [];
+            let diaryContainer = document.getElementById("diaryEntries");
+            diaryContainer.innerHTML = "";
+
+            diaryEntries.forEach(entry => {
+                let entryDiv = document.createElement("div");
+                entryDiv.classList.add("entry");
+
+                let entryContent = `<p>${entry.mood} ${entry.text}</p>`;
+                
+                if (entry.image) {
+                    entryContent += `<img src="${entry.image}" alt="Foto kenangan">`;
+                }
+
+                if (entry.audio) {
+                    entryContent += `<audio controls><source src="${entry.audio}" type="audio/mpeg">Your browser does not support the audio tag.</audio>`;
+                }
+
+                let deleteBtn = document.createElement("button");
+                deleteBtn.classList.add("delete-btn");
+                deleteBtn.innerText = "Hapus";
+                deleteBtn.onclick = () => deleteDiary(entry.id);
+
+                entryDiv.innerHTML = entryContent;
+                entryDiv.appendChild(deleteBtn);
+                diaryContainer.appendChild(entryDiv);
+            });
+        }
+
+        function deleteDiary(id) {
+            let diaryEntries = JSON.parse(localStorage.getItem("diaryEntries")) || [];
+            diaryEntries = diaryEntries.filter(entry => entry.id !== id);
+            localStorage.setItem("diaryEntries", JSON.stringify(diaryEntries));
+            displayDiary();
+        }
+
+        window.onload = displayDiary;
+    </script>
+
+</body>
+</html>

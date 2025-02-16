@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letters</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header>
+        <h2>📜 Letters</h2>
+        <button class="back-btn" onclick="goBack()">⬅ Kembali</button>
+    </header>
+
+    <main>
+        <textarea id="letterInput" placeholder="Tulis surat di sini..."></textarea>
+        <button onclick="addLetter()">➕ Tambah Surat</button>
+
+        <div id="lettersContainer"></div>
+    </main>
+
+    <script>
+        function addLetter() {
+            let input = document.getElementById("letterInput").value.trim();
+            if (input === "") return;
+
+            let letters = JSON.parse(localStorage.getItem("letters")) || [];
+            letters.push(input);
+            localStorage.setItem("letters", JSON.stringify(letters));
+
+            document.getElementById("letterInput").value = "";
+            displayLetters();
+        }
+
+        function displayLetters() {
+            let letters = JSON.parse(localStorage.getItem("letters")) || [];
+            let container = document.getElementById("lettersContainer");
+            container.innerHTML = "";
+
+            letters.forEach((text, index) => {
+                let letterDiv = document.createElement("div");
+                letterDiv.classList.add("letter");
+
+                let content = document.createElement("p");
+                content.textContent = text;
+
+                let deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "❌ Hapus";
+                deleteBtn.onclick = () => deleteLetter(index);
+
+                letterDiv.appendChild(content);
+                letterDiv.appendChild(deleteBtn);
+                container.appendChild(letterDiv);
+            });
+        }
+
+        function deleteLetter(index) {
+            let letters = JSON.parse(localStorage.getItem("letters")) || [];
+            letters.splice(index, 1);
+            localStorage.setItem("letters", JSON.stringify(letters));
+            displayLetters();
+        }
+
+        function goBack() {
+            window.location.href = "dashboard.html";
+        }
+
+        displayLetters();
+    </script>
+
+</body>
+</html>
