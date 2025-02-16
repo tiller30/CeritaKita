@@ -3,10 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photo Story</title>
-    <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-storage.js"></script>
+    <title>Our Memories</title>
+    <script type="module">
+        // Import Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, orderBy, query } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-storage.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoRQA1MfB-wbdZPe-tpOEx3jgMrPcfyhM",
+            authDomain: "cerita-kita-a847b.firebaseapp.com",
+            projectId: "cerita-kita-a847b",
+            storageBucket: "cerita-kita-a847b.appspot.com",
+            messagingSenderId: "618826614879",
+            appId: "1:618826614879:web:7d73414f5fd90fee6273ea",
+            measurementId: "G-D6M68JD27G"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // Fungsi untuk menyimpan kenangan ke Firebase
+        async function saveMemory() {
+            let photo = document.getElementById("photoUpload").files[0];
+            let story = document.getElementById("photoStory").value;
+
+            if (!photo || story.trim() === "") {
+                alert("Tambahkan foto dan cerita dulu!");
+                return;
+            }
+
+            let storageRef = ref(storage, `memories/${photo.name}`);
+            let snapshot = await uploadBytes(storageRef, photo);
+            let photoURL = await getDownloadURL(snapshot.ref);
+
+            await addDoc(collection(db, "memories"), {
+                photo: photoURL,
+                story: story,
+                timestamp: new Date()
+            });
+
+            alert("Kenangan berhasil disimpan!");
+            document.getElementById("photoUpload").value = "";
+            document.getElementById("photoStory").value = "";
+        }
+
+        // Fungsi untuk menampilkan kenangan dari Firebase
+        function loadMemories() {
+            const memoryGallery = document.getElementById("memoryGallery");
+            memoryGallery.innerHTML = "";
+
+            const q = query(collection(db, "memories"), orderBy("timestamp", "desc"));
+
+            onSnapshot(q, (snapshot) => {
+                memoryGallery.innerHTML = "";
+                snapshot.docs.forEach((doc) => {
+                    let memoryData = doc.data();
+                    displayMemory(memoryData);
+                });
+            });
+        }
+
+        // Fungsi untuk menampilkan satu kenangan di halaman
+        function displayMemory(memoryData) {
+            let memoryDiv = document.createElement("div");
+            memoryDiv.classList.add("memory");
+            memoryDiv.innerHTML = `<img src="${memoryData.photo}" alt="Kenangan"><p>${memoryData.story}</p>`;
+            document.getElementById("memoryGallery").appendChild(memoryDiv);
+        }
+
+        // Fungsi untuk menampilkan kenangan acak
+        async function showRandomMemory() {
+            let snapshot = await getDocs(collection(db, "memories"));
+
+            if (snapshot.empty) {
+                alert("Belum ada kenangan yang disimpan.");
+                return;
+            }
+
+            let memories = snapshot.docs.map(doc => doc.data());
+            let randomMemory = memories[Math.floor(Math.random() * memories.length)];
+            alert("📸 Random Memory: " + randomMemory.story);
+        }
+
+        // Panggil fungsi saat halaman dimuat
+        document.addEventListener("DOMContentLoaded", loadMemories);
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,7 +99,6 @@
             text-align: center;
             padding: 20px;
         }
-
         .container {
             max-width: 450px;
             background: white;
@@ -23,7 +107,6 @@
             box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
             margin: auto;
         }
-
         .memory {
             background: #fff;
             padding: 10px;
@@ -32,17 +115,14 @@
             box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
             text-align: left;
         }
-
         .memory img {
             width: 100%;
             border-radius: 5px;
         }
-
         .memory p {
             font-style: italic;
             color: #555;
         }
-
         input, textarea {
             width: 100%;
             padding: 10px;
@@ -50,7 +130,6 @@
             border: 1px solid #ddd;
             border-radius: 5px;
         }
-
         button {
             background: #4a90e2;
             color: white;
@@ -63,9 +142,8 @@
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h2>📖 Photo Story 📸</h2>
+        <h2>📖 Our Story 📸</h2>
         <p>Tambahkan kenangan indah dengan cerita!</p>
 
         <input type="file" id="photoUpload" accept="image/*">
@@ -76,83 +154,5 @@
         <h3>Album Kenangan:</h3>
         <div id="memoryGallery"></div>
     </div>
-
-    <script>
-        // Konfigurasi Firebase (GANTI DENGAN KONFIGURASI PROYEKMU)
-        const firebaseConfig = {
-  apiKey: "AIzaSyAoRQA1MfB-wbdZPe-tpOEx3jgMrPcfyhM",
-  authDomain: "cerita-kita-a847b.firebaseapp.com",
-  projectId: "cerita-kita-a847b",
-  storageBucket: "cerita-kita-a847b.firebasestorage.app",
-  messagingSenderId: "618826614879",
-  appId: "1:618826614879:web:7d73414f5fd90fee6273ea",
-  measurementId: "G-D6M68JD27G"
-};
-
-        // Inisialisasi Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const storage = firebase.storage();
-
-        function saveMemory() {
-            let photo = document.getElementById("photoUpload").files[0];
-            let story = document.getElementById("photoStory").value;
-
-            if (!photo || story.trim() === "") {
-                alert("Tambahkan foto dan cerita dulu!");
-                return;
-            }
-
-            let storageRef = storage.ref('memories/' + photo.name);
-            storageRef.put(photo).then(snapshot => {
-                storageRef.getDownloadURL().then(url => {
-                    db.collection("memories").add({
-                        photo: url,
-                        story: story,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    }).then(() => {
-                        alert("Kenangan berhasil disimpan!");
-                        loadMemories();
-                        document.getElementById("photoUpload").value = "";
-                        document.getElementById("photoStory").value = "";
-                    });
-                });
-            });
-        }
-
-        function loadMemories() {
-            document.getElementById("memoryGallery").innerHTML = "";
-            db.collection("memories").orderBy("timestamp", "desc").onSnapshot(snapshot => {
-                snapshot.docs.forEach(doc => {
-                    let memoryData = doc.data();
-                    displayMemory(memoryData);
-                });
-            });
-        }
-
-        function displayMemory(memoryData) {
-            let memoryDiv = document.createElement("div");
-            memoryDiv.classList.add("memory");
-            memoryDiv.innerHTML = `<img src="${memoryData.photo}" alt="Kenangan"><p>${memoryData.story}</p>`;
-            document.getElementById("memoryGallery").appendChild(memoryDiv);
-        }
-
-        function showRandomMemory() {
-            db.collection("memories").get().then(snapshot => {
-                if (snapshot.empty) {
-                    alert("Belum ada kenangan yang disimpan.");
-                    return;
-                }
-
-                let memories = snapshot.docs.map(doc => doc.data());
-                let randomMemory = memories[Math.floor(Math.random() * memories.length)];
-                alert("📸 Random Memory: " + randomMemory.story);
-            });
-        }
-
-        // Load memories saat halaman dibuka
-        loadMemories();
-    </script>
-
 </body>
 </html>
