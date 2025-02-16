@@ -26,14 +26,28 @@
             border-radius: 5px;
             box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
             text-align: left;
+            position: relative;
         }
         .memory img {
             width: 100%;
             border-radius: 5px;
+            display: block;
+            transition: opacity 0.5s ease-in-out;
         }
         .memory p {
             font-style: italic;
             color: #555;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            border-radius: 3px;
         }
         input, textarea {
             width: 100%;
@@ -51,6 +65,11 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        #loading {
+            display: none;
+            font-size: 14px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -62,18 +81,17 @@
         <textarea id="photoStory" placeholder="Tulis cerita singkat..."></textarea>
         <button onclick="saveMemory()">Simpan Kenangan</button>
         <button onclick="showRandomMemory()">🔄 Random Memory</button>
+        <p id="loading">⏳ Menyimpan kenangan...</p>
 
         <h3>Album Kenangan:</h3>
         <div id="memoryGallery"></div>
     </div>
 
     <script type="module">
-        // Import Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, onSnapshot, orderBy, query } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, orderBy, query, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-storage.js";
 
-        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAoRQA1MfB-wbdZPe-tpOEx3jgMrPcfyhM",
             authDomain: "cerita-kita-a847b.firebaseapp.com",
@@ -84,20 +102,21 @@
             measurementId: "G-D6M68JD27G"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        // Fungsi untuk menyimpan kenangan ke Firebase
         async function saveMemory() {
             let photo = document.getElementById("photoUpload").files[0];
             let story = document.getElementById("photoStory").value;
+            let loadingText = document.getElementById("loading");
 
             if (!photo || story.trim() === "") {
                 alert("Tambahkan foto dan cerita dulu!");
                 return;
             }
+
+            loadingText.style.display = "block";
 
             let storageRef = ref(storage, `memories/${photo.name}`);
             let snapshot = await uploadBytes(storageRef, photo);
@@ -106,15 +125,15 @@
             await addDoc(collection(db, "memories"), {
                 photo: photoURL,
                 story: story,
-                timestamp: new Date()
+                timestamp: serverTimestamp()
             });
 
+            loadingText.style.display = "none";
             alert("Kenangan berhasil disimpan!");
             document.getElementById("photoUpload").value = "";
             document.getElementById("photoStory").value = "";
         }
 
-        // Fungsi untuk menampilkan kenangan dari Firebase
         function loadMemories() {
             const memoryGallery = document.getElementById("memoryGallery");
             memoryGallery.innerHTML = "";
@@ -124,21 +143,47 @@
             onSnapshot(q, (snapshot) => {
                 memoryGallery.innerHTML = "";
                 snapshot.docs.forEach((doc) => {
-                    let memoryData = doc.data();
+                    let memoryData = { id: doc.id, ...doc.data() };
                     displayMemory(memoryData);
                 });
             });
         }
 
-        // Fungsi untuk menampilkan satu kenangan di halaman
         function displayMemory(memoryData) {
             let memoryDiv = document.createElement("div");
             memoryDiv.classList.add("memory");
-            memoryDiv.innerHTML = `<img src="${memoryData.photo}" alt="Kenangan"><p>${memoryData.story}</p>`;
+
+            let img = document.createElement("img");
+            img.setAttribute("data-src", memoryData.photo);
+            img.setAttribute("alt", "Kenangan");
+            img.setAttribute("loading", "lazy");
+            img.style.opacity = "0";
+
+            img.onload = () => img.style.opacity = "1";
+            img.src = memoryData.photo;
+
+            let storyText = document.createElement("p");
+            storyText.innerText = memoryData.story;
+
+            let deleteBtn = document.createElement("button");
+            deleteBtn.innerText = "❌";
+            deleteBtn.classList.add("delete-btn");
+            deleteBtn.onclick = () => deleteMemory(memoryData.id);
+
+            memoryDiv.appendChild(deleteBtn);
+            memoryDiv.appendChild(img);
+            memoryDiv.appendChild(storyText);
+
             document.getElementById("memoryGallery").appendChild(memoryDiv);
         }
 
-        // Fungsi untuk menampilkan kenangan acak
+        async function deleteMemory(memoryId) {
+            if (confirm("Yakin ingin menghapus kenangan ini?")) {
+                await deleteDoc(doc(db, "memories", memoryId));
+                alert("Kenangan berhasil dihapus!");
+            }
+        }
+
         async function showRandomMemory() {
             let snapshot = await getDocs(collection(db, "memories"));
 
@@ -152,12 +197,11 @@
             alert("📸 Random Memory: " + randomMemory.story);
         }
 
-        // Panggil fungsi saat halaman dimuat
         document.addEventListener("DOMContentLoaded", loadMemories);
 
-        // Memastikan fungsi dapat dipanggil dari HTML
         window.saveMemory = saveMemory;
         window.showRandomMemory = showRandomMemory;
+        window.deleteMemory = deleteMemory;
     </script>
 </body>
 </html>
