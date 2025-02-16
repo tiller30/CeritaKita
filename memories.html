@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Memories</title>
+    <title>Photo Story</title>
+    <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-storage.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -28,8 +31,6 @@
             border-radius: 5px;
             box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
             text-align: left;
-            position: relative;
-            animation: fadeIn 1s ease-in-out;
         }
 
         .memory img {
@@ -40,19 +41,6 @@
         .memory p {
             font-style: italic;
             color: #555;
-        }
-
-        .delete-btn {
-            background: red;
-            color: white;
-            border: none;
-            padding: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 5px;
-            display: block;
-            width: 100%;
-            text-align: center;
         }
 
         input, textarea {
@@ -72,17 +60,12 @@
             border-radius: 5px;
             cursor: pointer;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>📖 Our Story 📸</h2>
+        <h2>📖 Photo Story 📸</h2>
         <p>Tambahkan kenangan indah dengan cerita!</p>
 
         <input type="file" id="photoUpload" accept="image/*">
@@ -95,7 +78,21 @@
     </div>
 
     <script>
-        let memories = JSON.parse(localStorage.getItem("memories")) || [];
+        // Konfigurasi Firebase (GANTI DENGAN KONFIGURASI PROYEKMU)
+        const firebaseConfig = {
+  apiKey: "AIzaSyCDFTvuA5PvpUpgU8WxE90yLupuzFv-d6s",
+  authDomain: "roulletebuckshot-3ba1c.firebaseapp.com",
+  databaseURL: "https://roulletebuckshot-3ba1c-default-rtdb.firebaseio.com",
+  projectId: "roulletebuckshot-3ba1c",
+  storageBucket: "roulletebuckshot-3ba1c.firebasestorage.app",
+  messagingSenderId: "151508114684",
+  appId: "1:151508114684:web:c5c847d00181509b378b79",
+  ;
+
+        // Inisialisasi Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
 
         function saveMemory() {
             let photo = document.getElementById("photoUpload").files[0];
@@ -106,60 +103,55 @@
                 return;
             }
 
-            let reader = new FileReader();
-            reader.onload = function(event) {
-                let memoryData = { photo: event.target.result, story: story };
-
-                memories.push(memoryData);
-                localStorage.setItem("memories", JSON.stringify(memories));
-
-                displayMemory(memoryData, memories.length - 1);
-
-                document.getElementById("photoUpload").value = "";
-                document.getElementById("photoStory").value = "";
-            };
-
-            reader.readAsDataURL(photo);
-        }
-
-        function displayMemory(memoryData, index) {
-            let memoryDiv = document.createElement("div");
-            memoryDiv.classList.add("memory");
-
-            memoryDiv.innerHTML = `
-                <img src="${memoryData.photo}" alt="Kenangan">
-                <p>${memoryData.story}</p>
-                <button class="delete-btn" onclick="deleteMemory(${index})">🗑 Hapus</button>
-            `;
-            document.getElementById("memoryGallery").prepend(memoryDiv);
-        }
-
-        function showRandomMemory() {
-            if (memories.length === 0) {
-                alert("Belum ada kenangan yang disimpan.");
-                return;
-            }
-
-            let randomIndex = Math.floor(Math.random() * memories.length);
-            let randomMemory = memories[randomIndex];
-
-            alert("📸 Random Memory: " + randomMemory.story);
-        }
-
-        function deleteMemory(index) {
-            memories.splice(index, 1);
-            localStorage.setItem("memories", JSON.stringify(memories));
-            renderMemories();
-        }
-
-        function renderMemories() {
-            document.getElementById("memoryGallery").innerHTML = "";
-            memories.forEach((memory, index) => {
-                displayMemory(memory, index);
+            let storageRef = storage.ref('memories/' + photo.name);
+            storageRef.put(photo).then(snapshot => {
+                storageRef.getDownloadURL().then(url => {
+                    db.collection("memories").add({
+                        photo: url,
+                        story: story,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(() => {
+                        alert("Kenangan berhasil disimpan!");
+                        loadMemories();
+                        document.getElementById("photoUpload").value = "";
+                        document.getElementById("photoStory").value = "";
+                    });
+                });
             });
         }
 
-        renderMemories();
+        function loadMemories() {
+            document.getElementById("memoryGallery").innerHTML = "";
+            db.collection("memories").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+                snapshot.docs.forEach(doc => {
+                    let memoryData = doc.data();
+                    displayMemory(memoryData);
+                });
+            });
+        }
+
+        function displayMemory(memoryData) {
+            let memoryDiv = document.createElement("div");
+            memoryDiv.classList.add("memory");
+            memoryDiv.innerHTML = `<img src="${memoryData.photo}" alt="Kenangan"><p>${memoryData.story}</p>`;
+            document.getElementById("memoryGallery").appendChild(memoryDiv);
+        }
+
+        function showRandomMemory() {
+            db.collection("memories").get().then(snapshot => {
+                if (snapshot.empty) {
+                    alert("Belum ada kenangan yang disimpan.");
+                    return;
+                }
+
+                let memories = snapshot.docs.map(doc => doc.data());
+                let randomMemory = memories[Math.floor(Math.random() * memories.length)];
+                alert("📸 Random Memory: " + randomMemory.story);
+            });
+        }
+
+        // Load memories saat halaman dibuka
+        loadMemories();
     </script>
 
 </body>
