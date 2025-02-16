@@ -4,6 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Our Memories</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #D0E8FF;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 450px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
+            margin: auto;
+        }
+        .memory {
+            background: #fff;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        .memory img {
+            width: 100%;
+            border-radius: 5px;
+        }
+        .memory p {
+            font-style: italic;
+            color: #555;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📖 Our Story 📸</h2>
+        <p>Tambahkan kenangan indah dengan cerita!</p>
+
+        <input type="file" id="photoUpload" accept="image/*">
+        <textarea id="photoStory" placeholder="Tulis cerita singkat..."></textarea>
+        <button onclick="saveMemory()">Simpan Kenangan</button>
+        <button onclick="showRandomMemory()">🔄 Random Memory</button>
+
+        <h3>Album Kenangan:</h3>
+        <div id="memoryGallery"></div>
+    </div>
+
     <script type="module">
         // Import Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
@@ -91,68 +154,10 @@
 
         // Panggil fungsi saat halaman dimuat
         document.addEventListener("DOMContentLoaded", loadMemories);
+
+        // Memastikan fungsi dapat dipanggil dari HTML
+        window.saveMemory = saveMemory;
+        window.showRandomMemory = showRandomMemory;
     </script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #D0E8FF;
-            text-align: center;
-            padding: 20px;
-        }
-        .container {
-            max-width: 450px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
-            margin: auto;
-        }
-        .memory {
-            background: #fff;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
-            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
-            text-align: left;
-        }
-        .memory img {
-            width: 100%;
-            border-radius: 5px;
-        }
-        .memory p {
-            font-style: italic;
-            color: #555;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        button {
-            background: #4a90e2;
-            color: white;
-            border: none;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>📖 Our Story 📸</h2>
-        <p>Tambahkan kenangan indah dengan cerita!</p>
-
-        <input type="file" id="photoUpload" accept="image/*">
-        <textarea id="photoStory" placeholder="Tulis cerita singkat..."></textarea>
-        <button onclick="saveMemory()">Simpan Kenangan</button>
-        <button onclick="showRandomMemory()">🔄 Random Memory</button>
-
-        <h3>Album Kenangan:</h3>
-        <div id="memoryGallery"></div>
-    </div>
 </body>
 </html>
