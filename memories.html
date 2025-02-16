@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our memories</title>
+    <title>Our Memories</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -40,6 +40,19 @@
         .memory p {
             font-style: italic;
             color: #555;
+        }
+
+        .delete-btn {
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 5px;
+            display: block;
+            width: 100%;
+            text-align: center;
         }
 
         input, textarea {
@@ -82,7 +95,7 @@
     </div>
 
     <script>
-        let memories = [];
+        let memories = JSON.parse(localStorage.getItem("memories")) || [];
 
         function saveMemory() {
             let photo = document.getElementById("photoUpload").files[0];
@@ -93,21 +106,31 @@
                 return;
             }
 
-            let photoURL = URL.createObjectURL(photo);
-            let memoryData = { photo: photoURL, story: story };
+            let reader = new FileReader();
+            reader.onload = function(event) {
+                let memoryData = { photo: event.target.result, story: story };
 
-            memories.push(memoryData);
-            displayMemory(memoryData);
+                memories.push(memoryData);
+                localStorage.setItem("memories", JSON.stringify(memories));
 
-            document.getElementById("photoUpload").value = "";
-            document.getElementById("photoStory").value = "";
+                displayMemory(memoryData, memories.length - 1);
+
+                document.getElementById("photoUpload").value = "";
+                document.getElementById("photoStory").value = "";
+            };
+
+            reader.readAsDataURL(photo);
         }
 
-        function displayMemory(memoryData) {
+        function displayMemory(memoryData, index) {
             let memoryDiv = document.createElement("div");
             memoryDiv.classList.add("memory");
 
-            memoryDiv.innerHTML = `<img src="${memoryData.photo}" alt="Kenangan"><p>${memoryData.story}</p>`;
+            memoryDiv.innerHTML = `
+                <img src="${memoryData.photo}" alt="Kenangan">
+                <p>${memoryData.story}</p>
+                <button class="delete-btn" onclick="deleteMemory(${index})">🗑 Hapus</button>
+            `;
             document.getElementById("memoryGallery").prepend(memoryDiv);
         }
 
@@ -122,6 +145,21 @@
 
             alert("📸 Random Memory: " + randomMemory.story);
         }
+
+        function deleteMemory(index) {
+            memories.splice(index, 1);
+            localStorage.setItem("memories", JSON.stringify(memories));
+            renderMemories();
+        }
+
+        function renderMemories() {
+            document.getElementById("memoryGallery").innerHTML = "";
+            memories.forEach((memory, index) => {
+                displayMemory(memory, index);
+            });
+        }
+
+        renderMemories();
     </script>
 
 </body>
