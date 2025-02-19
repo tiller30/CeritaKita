@@ -70,8 +70,12 @@
         <h3>Album Kenangan:</h3>
         <div id="memoryGallery"></div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
-        const API_URL = 'https://tiller30.github.io/CeritaKita/'; // Ganti dengan IP server jika diakses dari handphone
+        // Inisialisasi Supabase Client
+        const supabaseUrl = 'https://dqlgejvsbsfuflejinzy.supabase.co'; // Ganti dengan URL proyek Anda
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Ganti dengan anon key dari Supabase
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         async function saveMemory() {
             const photoInput = document.getElementById("photoUpload");
@@ -88,23 +92,21 @@
                 const story = storyInput.value;
 
                 try {
-                    const response = await fetch(`${API_URL}/memories`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ photo: photoURL, story })
-                    });
+                    const { data, error } = await supabase
+                        .from('memories')
+                        .insert([{ photo: photoURL, story: story }]);
 
-                    if (response.ok) {
-                        alert("Kenangan berhasil disimpan!");
-                        loadMemories();
-                        photoInput.value = "";
-                        storyInput.value = "";
-                    } else {
-                        alert("Gagal menyimpan kenangan.");
+                    if (error) {
+                        throw error;
                     }
+
+                    alert("Kenangan berhasil disimpan!");
+                    loadMemories();
+                    photoInput.value = "";
+                    storyInput.value = "";
                 } catch (error) {
-                    console.error("Error:", error);
-                    alert("Terjadi kesalahan saat menyimpan kenangan.");
+                    console.error("Error:", error.message);
+                    alert("Gagal menyimpan kenangan.");
                 }
             };
             reader.readAsDataURL(photoInput.files[0]);
@@ -112,36 +114,45 @@
 
         async function loadMemories() {
             try {
-                const response = await fetch(`${API_URL}/memories`);
-                const memories = await response.json();
+                const { data, error } = await supabase
+                    .from('memories')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    throw error;
+                }
 
                 const gallery = document.getElementById("memoryGallery");
                 gallery.innerHTML = "";
 
-                memories.forEach(memory => {
+                data.forEach(memory => {
                     const memoryDiv = document.createElement("div");
                     memoryDiv.classList.add("memory");
                     memoryDiv.innerHTML = `<img src="${memory.photo}" alt="Kenangan"><p>${memory.story}</p>`;
                     gallery.appendChild(memoryDiv);
                 });
             } catch (error) {
-                console.error("Error:", error);
+                console.error("Error:", error.message);
                 alert("Gagal memuat kenangan.");
             }
         }
 
         async function showRandomMemory() {
             try {
-                const response = await fetch(`${API_URL}/memories/random`);
-                const randomMemory = await response.json();
+                const { data, error } = await supabase
+                    .from('memories')
+                    .select('*')
+                    .limit(1)
+                    .single();
 
-                if (randomMemory) {
-                    alert("📸 Random Memory: " + randomMemory.story);
-                } else {
-                    alert("Belum ada kenangan yang disimpan.");
+                if (error) {
+                    throw error;
                 }
+
+                alert("📸 Random Memory: " + data.story);
             } catch (error) {
-                console.error("Error:", error);
+                console.error("Error:", error.message);
                 alert("Gagal mendapatkan kenangan acak.");
             }
         }
