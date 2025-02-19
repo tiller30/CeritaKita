@@ -4,70 +4,174 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Letters</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            text-align: center;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .back-btn {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+        }
+        button {
+            background: #ff6b81;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .letter {
+            background: white;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            position: relative;
+        }
+        .letter p {
+            margin: 0;
+        }
+        .letter button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-
     <header>
         <h2>📜 Letters</h2>
         <button class="back-btn" onclick="goBack()">⬅ Kembali</button>
     </header>
-
     <main>
         <textarea id="letterInput" placeholder="Tulis surat di sini..."></textarea>
         <button onclick="addLetter()">➕ Tambah Surat</button>
-
         <div id="lettersContainer"></div>
     </main>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
-        function addLetter() {
-            let input = document.getElementById("letterInput").value.trim();
-            if (input === "") return;
+        // Inisialisasi Supabase Client
+        const supabaseUrl = 'https://dqlgejvsbsfuflejinzy.supabase.co'; // Ganti dengan URL proyek Anda
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Ganti dengan anon key dari Supabase
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-            let letters = JSON.parse(localStorage.getItem("letters")) || [];
-            letters.push(input);
-            localStorage.setItem("letters", JSON.stringify(letters));
+        async function addLetter() {
+            const input = document.getElementById("letterInput").value.trim();
+            if (input === "") {
+                alert("Tuliskan sesuatu dulu!");
+                return;
+            }
 
-            document.getElementById("letterInput").value = "";
-            displayLetters();
+            try {
+                const { data, error } = await supabase
+                    .from('letters')
+                    .insert([{ content: input }]);
+
+                if (error) {
+                    throw error;
+                }
+
+                alert("Surat berhasil ditambahkan!");
+                loadLetters();
+                document.getElementById("letterInput").value = "";
+            } catch (error) {
+                console.error("Error:", error.message);
+                alert("Gagal menambahkan surat.");
+            }
         }
 
-        function displayLetters() {
-            let letters = JSON.parse(localStorage.getItem("letters")) || [];
-            let container = document.getElementById("lettersContainer");
-            container.innerHTML = "";
+        async function loadLetters() {
+            try {
+                const { data, error } = await supabase
+                    .from('letters')
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
-            letters.forEach((text, index) => {
-                let letterDiv = document.createElement("div");
-                letterDiv.classList.add("letter");
+                if (error) {
+                    throw error;
+                }
 
-                let content = document.createElement("p");
-                content.textContent = text;
+                const container = document.getElementById("lettersContainer");
+                container.innerHTML = "";
 
-                let deleteBtn = document.createElement("button");
-                deleteBtn.textContent = "❌ Hapus";
-                deleteBtn.onclick = () => deleteLetter(index);
-
-                letterDiv.appendChild(content);
-                letterDiv.appendChild(deleteBtn);
-                container.appendChild(letterDiv);
-            });
+                data.forEach(letter => displayLetter(letter));
+            } catch (error) {
+                console.error("Error:", error.message);
+                alert("Gagal memuat surat.");
+            }
         }
 
-        function deleteLetter(index) {
-            let letters = JSON.parse(localStorage.getItem("letters")) || [];
-            letters.splice(index, 1);
-            localStorage.setItem("letters", JSON.stringify(letters));
-            displayLetters();
+        function displayLetter(letter) {
+            const letterDiv = document.createElement("div");
+            letterDiv.classList.add("letter");
+
+            const content = document.createElement("p");
+            content.textContent = letter.content;
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "❌ Hapus";
+            deleteBtn.onclick = () => deleteLetter(letter.id);
+
+            letterDiv.appendChild(content);
+            letterDiv.appendChild(deleteBtn);
+            document.getElementById("lettersContainer").appendChild(letterDiv);
+        }
+
+        async function deleteLetter(id) {
+            try {
+                const { error } = await supabase
+                    .from('letters')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    throw error;
+                }
+
+                alert("Surat berhasil dihapus!");
+                loadLetters();
+            } catch (error) {
+                console.error("Error:", error.message);
+                alert("Gagal menghapus surat.");
+            }
         }
 
         function goBack() {
             window.location.href = "dashboard.html";
         }
 
-        displayLetters();
+        // Load letters on page load
+        window.onload = loadLetters;
     </script>
-
 </body>
 </html>
