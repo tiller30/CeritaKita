@@ -37,6 +37,17 @@
             font-style: italic;
             color: #555;
         }
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
         input, textarea {
             width: 100%;
             padding: 10px;
@@ -129,12 +140,35 @@
                 data.forEach(memory => {
                     const memoryDiv = document.createElement("div");
                     memoryDiv.classList.add("memory");
-                    memoryDiv.innerHTML = `<img src="${memory.photo}" alt="Kenangan"><p>${memory.story}</p>`;
+                    memoryDiv.innerHTML = `
+                        <img src="${memory.photo}" alt="Kenangan">
+                        <p>${memory.story}</p>
+                        <button class="delete-btn" onclick="deleteMemory(${memory.id})">Hapus</button>
+                    `;
                     gallery.appendChild(memoryDiv);
                 });
             } catch (error) {
                 console.error("Error:", error.message);
                 alert("Gagal memuat kenangan.");
+            }
+        }
+
+        async function deleteMemory(id) {
+            try {
+                const { error } = await supabase
+                    .from('memories')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    throw error;
+                }
+
+                alert("Kenangan berhasil dihapus!");
+                loadMemories(); // Reload memories after deletion
+            } catch (error) {
+                console.error("Error:", error.message);
+                alert("Gagal menghapus kenangan.");
             }
         }
 
@@ -161,4 +195,4 @@
         loadMemories();
     </script>
 </body>
-</html>
+    </html>
