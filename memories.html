@@ -3,41 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Memories</title>
+    <title>Letters</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #D0E8FF;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
             text-align: center;
+        }
+        header {
+            background-color: #4a90e2;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h2 {
+            margin: 0;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        main {
             padding: 20px;
         }
-        .container {
-            max-width: 450px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
-            margin: auto;
-        }
-        .memory {
-            background: #fff;
+        textarea {
+            width: 100%;
+            height: 100px;
             padding: 10px;
-            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+            margin-bottom: 10px;
+        }
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        #lettersContainer {
+            margin-top: 20px;
+        }
+        .letter {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
             border-radius: 5px;
             box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
             text-align: left;
             position: relative;
-            animation: fadeIn 1s ease-in-out;
         }
-        .memory img {
-            width: 100%;
-            border-radius: 5px;
+        .letter p {
+            margin: 0;
+            font-size: 16px;
         }
-        .memory p {
-            font-style: italic;
-            color: #555;
-        }
-        .delete-btn {
+        .letter button {
             position: absolute;
             top: 10px;
             right: 10px;
@@ -46,41 +79,24 @@
             border: none;
             padding: 5px 10px;
             border-radius: 5px;
+            font-size: 12px;
             cursor: pointer;
         }
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        button {
-            background: #4a90e2;
-            color: white;
-            border: none;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .letter button:hover {
+            background: darkred;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>📖 Our Story 📸</h2>
-        <p>Tambahkan kenangan indah dengan cerita!</p>
-        <input type="file" id="photoUpload" accept="image/*">
-        <textarea id="photoStory" placeholder="Tulis cerita singkat..."></textarea>
-        <button onclick="saveMemory()">Simpan Kenangan</button>
-        <button onclick="showRandomMemory()">🔄 Random Memory</button>
-        <h3>Album Kenangan:</h3>
-        <div id="memoryGallery"></div>
-    </div>
+    <header>
+        <h2>📜 Letters</h2>
+        <button class="back-btn" onclick="goBack()">⬅ Kembali</button>
+    </header>
+    <main>
+        <textarea id="letterInput" placeholder="Tulis surat di sini..."></textarea>
+        <button onclick="addLetter()">➕ Tambah Surat</button>
+        <div id="lettersContainer"></div>
+    </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Inisialisasi Supabase Client
@@ -88,45 +104,35 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Ganti dengan anon key dari Supabase
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        async function saveMemory() {
-            const photoInput = document.getElementById("photoUpload");
-            const storyInput = document.getElementById("photoStory");
-
-            if (!photoInput.files[0] || storyInput.value.trim() === "") {
-                alert("Tambahkan foto dan cerita dulu!");
+        async function addLetter() {
+            const input = document.getElementById("letterInput").value.trim();
+            if (input === "") {
+                alert("Tuliskan sesuatu dulu!");
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const photoURL = e.target.result;
-                const story = storyInput.value;
-
-                try {
-                    const { data, error } = await supabase
-                        .from('memories')
-                        .insert([{ photo: photoURL, story: story }]);
-
-                    if (error) {
-                        throw error;
-                    }
-
-                    alert("Kenangan berhasil disimpan!");
-                    loadMemories();
-                    photoInput.value = "";
-                    storyInput.value = "";
-                } catch (error) {
-                    console.error("Error:", error.message);
-                    alert("Gagal menyimpan kenangan.");
-                }
-            };
-            reader.readAsDataURL(photoInput.files[0]);
-        }
-
-        async function loadMemories() {
             try {
                 const { data, error } = await supabase
-                    .from('memories')
+                    .from('letters')
+                    .insert([{ content: input }]);
+
+                if (error) {
+                    throw error;
+                }
+
+                alert("Surat berhasil disimpan!");
+                loadLetters();
+                document.getElementById("letterInput").value = "";
+            } catch (error) {
+                console.error("Error:", error.message);
+                alert("Gagal menyimpan surat.");
+            }
+        }
+
+        async function loadLetters() {
+            try {
+                const { data, error } = await supabase
+                    .from('letters')
                     .select('*')
                     .order('created_at', { ascending: false });
 
@@ -134,29 +140,36 @@
                     throw error;
                 }
 
-                const gallery = document.getElementById("memoryGallery");
-                gallery.innerHTML = "";
+                const container = document.getElementById("lettersContainer");
+                container.innerHTML = "";
 
-                data.forEach(memory => {
-                    const memoryDiv = document.createElement("div");
-                    memoryDiv.classList.add("memory");
-                    memoryDiv.innerHTML = `
-                        <img src="${memory.photo}" alt="Kenangan">
-                        <p>${memory.story}</p>
-                        <button class="delete-btn" onclick="deleteMemory(${memory.id})">Hapus</button>
-                    `;
-                    gallery.appendChild(memoryDiv);
-                });
+                data.forEach(letter => displayLetter(letter));
             } catch (error) {
                 console.error("Error:", error.message);
-                alert("Gagal memuat kenangan.");
+                alert("Gagal memuat surat.");
             }
         }
 
-        async function deleteMemory(id) {
+        function displayLetter(letter) {
+            const letterDiv = document.createElement("div");
+            letterDiv.classList.add("letter");
+
+            const content = document.createElement("p");
+            content.textContent = letter.content;
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "❌ Hapus";
+            deleteBtn.onclick = () => deleteLetter(letter.id);
+
+            letterDiv.appendChild(content);
+            letterDiv.appendChild(deleteBtn);
+            document.getElementById("lettersContainer").appendChild(letterDiv);
+        }
+
+        async function deleteLetter(id) {
             try {
                 const { error } = await supabase
-                    .from('memories')
+                    .from('letters')
                     .delete()
                     .eq('id', id);
 
@@ -164,35 +177,20 @@
                     throw error;
                 }
 
-                alert("Kenangan berhasil dihapus!");
-                loadMemories(); // Reload memories after deletion
+                alert("Surat berhasil dihapus!");
+                loadLetters();
             } catch (error) {
                 console.error("Error:", error.message);
-                alert("Gagal menghapus kenangan.");
+                alert("Gagal menghapus surat.");
             }
         }
 
-        async function showRandomMemory() {
-            try {
-                const { data, error } = await supabase
-                    .from('memories')
-                    .select('*')
-                    .limit(1)
-                    .single();
-
-                if (error) {
-                    throw error;
-                }
-
-                alert("📸 Random Memory: " + data.story);
-            } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal mendapatkan kenangan acak.");
-            }
+        function goBack() {
+            window.location.href = "dashboard.html";
         }
 
-        // Load memories on page load
-        loadMemories();
+        // Load letters on page load
+        window.onload = loadLetters;
     </script>
 </body>
-    </html>
+</html>
