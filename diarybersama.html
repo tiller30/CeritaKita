@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Love Diary</title>
+    <title>Diary Bersama</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,7 +11,6 @@
             text-align: center;
             padding: 20px;
         }
-
         .container {
             max-width: 400px;
             background: white;
@@ -20,7 +19,6 @@
             box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
             margin: auto;
         }
-
         textarea {
             width: 100%;
             height: 100px;
@@ -29,12 +27,10 @@
             border-radius: 5px;
             resize: none;
         }
-
         select, input[type="file"] {
             margin-top: 10px;
             width: 100%;
         }
-
         button {
             background: #ff6b81;
             color: white;
@@ -44,7 +40,6 @@
             border-radius: 5px;
             cursor: pointer;
         }
-
         .entry {
             background: #fff;
             padding: 10px;
@@ -54,18 +49,15 @@
             text-align: left;
             position: relative;
         }
-
         .entry img {
             width: 100%;
             border-radius: 5px;
             margin-top: 5px;
         }
-
         .entry audio {
             width: 100%;
             margin-top: 5px;
         }
-
         .delete-btn {
             position: absolute;
             top: 5px;
@@ -81,11 +73,9 @@
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h2>Love Diary</h2>
-        <p>Cerita harian kita 💕</p>
-
+        <h2>Diary Bersama 💕</h2>
+        <p>Cerita harian kita bersama!</p>
         <textarea id="diaryText" placeholder="Tulis cerita hari ini..."></textarea>
         
         <label for="mood">Pilih Mood:</label>
@@ -96,89 +86,136 @@
             <option value="😡">😡 Kesal</option>
             <option value="😂">😂 Lucu</option>
         </select>
-
         <label for="imageUpload">Tambah Foto:</label>
         <input type="file" id="imageUpload" accept="image/*">
-
         <label for="audioUpload">Tambah Suara:</label>
         <input type="file" id="audioUpload" accept="audio/*">
-
         <button onclick="saveDiary()">Simpan</button>
-
         <h3>📖 Catatan Sebelumnya:</h3>
         <div id="diaryEntries"></div>
     </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
-        function saveDiary() {
-            let text = document.getElementById("diaryText").value;
-            let mood = document.getElementById("mood").value;
-            let image = document.getElementById("imageUpload").files[0];
-            let audio = document.getElementById("audioUpload").files[0];
+        // Inisialisasi Supabase Client
+        const supabaseUrl = 'https://dqlgejvsbsfuflejinzy.supabase.co'; // Ganti dengan URL proyek Anda
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Ganti dengan anon key dari Supabase
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-            if (text === "") {
+        async function saveDiary() {
+            const text = document.getElementById("diaryText").value;
+            const mood = document.getElementById("mood").value;
+            const imageInput = document.getElementById("imageUpload").files[0];
+            const audioInput = document.getElementById("audioUpload").files[0];
+
+            if (!text) {
                 alert("Tuliskan sesuatu dulu!");
                 return;
             }
 
-            let entry = {
-                id: new Date().getTime(),
-                text: text,
-                mood: mood,
-                image: image ? URL.createObjectURL(image) : null,
-                audio: audio ? URL.createObjectURL(audio) : null
-            };
+            let imageBase64 = null;
+            let audioBase64 = null;
 
-            let diaryEntries = JSON.parse(localStorage.getItem("diaryEntries")) || [];
-            diaryEntries.unshift(entry);
-            localStorage.setItem("diaryEntries", JSON.stringify(diaryEntries));
+            if (imageInput) {
+                imageBase64 = await convertFileToBase64(imageInput);
+            }
+            if (audioInput) {
+                audioBase64 = await convertFileToBase64(audioInput);
+            }
 
-            document.getElementById("diaryText").value = "";
-            document.getElementById("imageUpload").value = "";
-            document.getElementById("audioUpload").value = "";
+            try {
+                const { data, error } = await supabase
+                    .from('diary_entries')
+                    .insert([{ text: text, mood: mood, image: imageBase64, audio: audioBase64 }]);
 
-            displayDiary();
+                if (error) {
+                    throw error;
+                }
+
+                alert("Catatan berhasil disimpan!");
+                loadDiary();
+                document.getElementById("diaryText").value = "";
+                document.getElementById("imageUpload").value = "";
+                document.getElementById("audioUpload").value = "";
+            } catch (error) {
+                console.error("Error:", error.message);
+                alert("Gagal menyimpan catatan.");
+            }
         }
 
-        function displayDiary() {
-            let diaryEntries = JSON.parse(localStorage.getItem("diaryEntries")) || [];
-            let diaryContainer = document.getElementById("diaryEntries");
-            diaryContainer.innerHTML = "";
+        async function loadDiary() {
+            try {
+                const { data, error } = await supabase
+                    .from('diary_entries')
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
-            diaryEntries.forEach(entry => {
-                let entryDiv = document.createElement("div");
-                entryDiv.classList.add("entry");
-
-                let entryContent = `<p>${entry.mood} ${entry.text}</p>`;
-                
-                if (entry.image) {
-                    entryContent += `<img src="${entry.image}" alt="Foto kenangan">`;
+                if (error) {
+                    throw error;
                 }
 
-                if (entry.audio) {
-                    entryContent += `<audio controls><source src="${entry.audio}" type="audio/mpeg">Your browser does not support the audio tag.</audio>`;
+                const diaryContainer = document.getElementById("diaryEntries");
+                diaryContainer.innerHTML = "";
+
+                data.forEach(entry => displayDiary(entry));
+            } catch (error) {
+                console.error("Error:", error.message);
+                alert("Gagal memuat catatan.");
+            }
+        }
+
+        function displayDiary(entry) {
+            const entryDiv = document.createElement("div");
+            entryDiv.classList.add("entry");
+
+            let entryContent = `<p>${entry.mood} ${entry.text}</p>`;
+
+            if (entry.image) {
+                entryContent += `<img src="${entry.image}" alt="Foto kenangan">`;
+            }
+            if (entry.audio) {
+                entryContent += `<audio controls><source src="${entry.audio}" type="audio/mpeg">Your browser does not support the audio tag.</audio>`;
+            }
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.classList.add("delete-btn");
+            deleteBtn.innerText = "Hapus";
+            deleteBtn.onclick = () => deleteDiary(entry.id);
+
+            entryDiv.innerHTML = entryContent;
+            entryDiv.appendChild(deleteBtn);
+            document.getElementById("diaryEntries").appendChild(entryDiv);
+        }
+
+        async function deleteDiary(id) {
+            try {
+                const { error } = await supabase
+                    .from('diary_entries')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    throw error;
                 }
 
-                let deleteBtn = document.createElement("button");
-                deleteBtn.classList.add("delete-btn");
-                deleteBtn.innerText = "Hapus";
-                deleteBtn.onclick = () => deleteDiary(entry.id);
+                alert("Catatan berhasil dihapus!");
+                loadDiary();
+            } catch (error) {
+                console.error("Error:", error.message);
+                alert("Gagal menghapus catatan.");
+            }
+        }
 
-                entryDiv.innerHTML = entryContent;
-                entryDiv.appendChild(deleteBtn);
-                diaryContainer.appendChild(entryDiv);
+        function convertFileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsDataURL(file);
             });
         }
 
-        function deleteDiary(id) {
-            let diaryEntries = JSON.parse(localStorage.getItem("diaryEntries")) || [];
-            diaryEntries = diaryEntries.filter(entry => entry.id !== id);
-            localStorage.setItem("diaryEntries", JSON.stringify(diaryEntries));
-            displayDiary();
-        }
-
-        window.onload = displayDiary;
+        // Load diary entries on page load
+        window.onload = loadDiary;
     </script>
-
 </body>
 </html>
