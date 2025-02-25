@@ -12,12 +12,23 @@ function clearInput() {
     document.getElementById("password").value = "";
 }
 
-function checkLogin() {
-    let correctPassword = "021223"; // Ubah sesuai kebutuhan
-    if (inputPassword === correctPassword) {
-        window.location.href = "dashboard.html"; // Pindah ke halaman utama setelah login
-    } else {
-        alert("Password salah!");
-        clearInput();
+async function checkLogin() {
+    try {
+        const response = await fetch("https://coconut-classy-football.glitch.me/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: inputPassword })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            alert("Login berhasil!");
+            // Redirect ke dashboard
+        } else {
+            alert("Password salah!");
+            clearInput();
+        }
+    } catch (error) {
+        console.error("Error:", error);
     }
 }
