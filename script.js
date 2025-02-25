@@ -14,12 +14,14 @@ function clearInput() {
 
 async function checkLogin() {
     try {
-        const response = await fetch("https://coconut-classy-football.glitch.me/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({ password: inputPassword })
         });
-        
+
         const data = await response.json();
         if (data.success) {
             alert("Login berhasil!");
@@ -29,6 +31,6 @@ async function checkLogin() {
             clearInput();
         }
     } catch (error) {
-        console.error("Error:", error);
+        console.error('Error:', error);
     }
 }
