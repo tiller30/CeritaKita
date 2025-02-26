@@ -10,7 +10,7 @@ function clearInput() {
     document.getElementById("password").value = "";
 }
 function checkLogin() {
-    let correctPassword = "1234"; // Ubah sesuai kebutuhan
+    let correctPassword = "021223"; // Ubah sesuai kebutuhan
     if (inputPassword === correctPassword) {
         window.location.href = "dashboard.html"; // Pindah ke halaman utama setelah login
     } else {
