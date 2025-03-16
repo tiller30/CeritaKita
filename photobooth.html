@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photobooth Vintage</title>
+    
+    <style>
+        /* --- CSS Styling --- */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e3f2fd;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #42a5f5;
+            color: white;
+            padding: 15px;
+            border-radius: 0 0 15px 15px;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        /* --- Video Preview (Mirror + Filter) --- */
+        video {
+            width: 90%;
+            max-width: 400px;
+            border-radius: 10px;
+            border: 3px solid #42a5f5;
+            transform: scaleX(-1); /* Mirror kamera agar tampilan seperti cermin */
+            filter: contrast(1.1) brightness(0.9) sepia(0.2) saturate(1.2); /* Efek Vintage */
+        }
+
+        /* --- Tombol --- */
+        button {
+            background-color: #64b5f6;
+            border: none;
+            padding: 10px 15px;
+            margin: 10px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #1e88e5;
+        }
+
+        /* --- Polaroid Frame --- */
+        #polaroidFrame {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* --- Canvas (Hasil Foto + Efek Filter) --- */
+        canvas {
+            background: white;
+            border: 5px solid #ccc;
+            border-radius: 10px;
+            padding: 10px;
+            filter: contrast(1.1) brightness(0.9) sepia(0.2) saturate(1.2); /* Efek Vintage */
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>📸 Photobooth Vintage</h2>
+    </header>
+
+    <main>
+        <video id="camera" autoplay></video>
+        <button onclick="capturePhoto()">📷 Ambil Foto</button>
+        <p id="photoCount">0/3 Foto Diambil</p>
+
+        <div id="polaroidFrame">
+            <canvas id="photoCanvas"></canvas>
+        </div>
+
+        <button id="downloadBtn" onclick="downloadPolaroid()" disabled>📥 Download Polaroid</button>
+    </main>
+
+    <script>
+        const video = document.getElementById("camera");
+        const canvas = document.getElementById("photoCanvas");
+        const ctx = canvas.getContext("2d");
+        const photos = [];
+        
+        // Mulai Kamera
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (error) {
+                alert("Gagal mengakses kamera. Pastikan izin kamera diaktifkan.");
+            }
+        }
+
+        // Ambil Foto
+        function capturePhoto() {
+            if (photos.length < 3) {
+                const tempCanvas = document.createElement("canvas");
+                const tempCtx = tempCanvas.getContext("2d");
+
+                // Gunakan ukuran asli kamera
+                tempCanvas.width = video.videoWidth;
+                tempCanvas.height = video.videoHeight;
+
+                // Mirror kembali saat mengambil foto
+                tempCtx.translate(tempCanvas.width, 0);
+                tempCtx.scale(-1, 1);
+                tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                // Simpan foto ke array
+                photos.push(tempCanvas.toDataURL("image/png"));
+                updatePolaroid();
+            }
+
+            document.getElementById("photoCount").innerText = `${photos.length}/3 Foto Diambil`;
+            if (photos.length === 3) {
+                document.getElementById("downloadBtn").disabled = false;
+            }
+        }
+
+        // Tampilkan Foto dalam Frame Polaroid + Efek Filter
+        function updatePolaroid() {
+            canvas.width = 220;
+            canvas.height = 680;
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#ddd";
+            ctx.fillRect(10, 10, 200, 200);
+            ctx.fillRect(10, 240, 200, 200);
+            ctx.fillRect(10, 470, 200, 200);
+
+            photos.forEach((photo, index) => {
+                let img = new Image();
+                img.src = photo;
+                img.onload = () => {
+                    ctx.drawImage(img, 10, 10 + (index * 230), 200, 200);
+
+                    // Efek Filter di Canvas (Kontras, Brightness, Sepia, Saturasi)
+                    let imageData = ctx.getImageData(10, 10 + (index * 230), 200, 200);
+                    let data = imageData.data;
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        let r = data[i];
+                        let g = data[i + 1];
+                        let b = data[i + 2];
+
+                        // Efek kontras
+                        let contrast = 1.1;
+                        r = ((r - 128) * contrast + 128);
+                        g = ((g - 128) * contrast + 128);
+                        b = ((b - 128) * contrast + 128);
+
+                        // Efek brightness
+                        let brightness = 0.9;
+                        r *= brightness;
+                        g *= brightness;
+                        b *= brightness;
+
+                        // Efek sepia
+                        let sepia = 0.2;
+                        let newR = r * (1 - sepia) + g * sepia * 0.769 + b * sepia * 0.189;
+                        let newG = r * sepia * 0.349 + g * (1 - sepia) + b * sepia * 0.168;
+                        let newB = r * sepia * 0.272 + g * sepia * 0.534 + b * (1 - sepia);
+
+                        // Efek saturasi
+                        let saturate = 1.2;
+                        newR = Math.min(255, newR * saturate);
+                        newG = Math.min(255, newG * saturate);
+                        newB = Math.min(255, newB * saturate);
+
+                        data[i] = newR;
+                        data[i + 1] = newG;
+                        data[i + 2] = newB;
+                    }
+
+                    ctx.putImageData(imageData, 10, 10 + (index * 230));
+                };
+            });
+
+            ctx.fillStyle = "black";
+            ctx.font = "16px Arial";
+            ctx.fillText("Photobooth Memories", 30, 660);
+        }
+
+        // Download Polaroid
+        function downloadPolaroid() {
+            let link = document.createElement("a");
+            link.download = "polaroid.png";
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Mulai Kamera saat halaman dimuat
+        startCamera();
+    </script>
+
+</body>
+</html>
