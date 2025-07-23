@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Keypad</title>
-    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
@@ -35,13 +34,15 @@
         </div>
     </div>
     
+    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Inisialisasi Supabase
-        const supabase = window.supabase.createClient(
-            'https://dqlgejvsbsfuflejinzy.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'
-        );
+        // KONFIGURASI SUPABASE - GANTI DENGAN DATA ANDA
+        const SUPABASE_URL = 'https://dqlgejvsbsfuflejinzy.supabase.co';  // Ganti dengan Project URL Anda
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU';  // Ganti dengan Anon Key Anda
+        
+        // Inisialisasi Supabase Client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let password = '';
 
@@ -66,6 +67,7 @@
             }
 
             try {
+                // LOGIN KE SUPABASE
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email: email,
                     password: password,
@@ -101,23 +103,80 @@
     </script>
     
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+        }
+        
         .login-form {
             text-align: center;
-            padding: 20px;
         }
         
         .login-form h2 {
             margin-bottom: 20px;
             color: #333;
+            font-size: 24px;
         }
         
         #email, #password {
-            width: 80%;
+            width: 100%;
             padding: 12px;
             margin: 10px 0;
             border: 2px solid #ddd;
             border-radius: 8px;
             font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        .keypad {
+            margin: 20px 0;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        button {
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        .image-container {
+            margin: 15px 0;
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
         }
         
         .message {
@@ -137,15 +196,6 @@
             background-color: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
-        }
-        
-        .container {
-            max-width: 400px;
-            margin: 50px auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            padding: 20px;
         }
     </style>
 </body>
