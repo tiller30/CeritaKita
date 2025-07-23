@@ -63,13 +63,27 @@
         .delete-btn:hover {
             background: #ff3742;
         }
-        input, textarea {
+        .form-group {
+            margin: 10px 0;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, textarea, select {
             width: 100%;
             padding: 12px;
-            margin-top: 10px;
+            margin-top: 5px;
             border: 1px solid #ddd;
             border-radius: 5px;
             box-sizing: border-box;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
         }
         button {
             background: #4a90e2;
@@ -132,6 +146,7 @@
             display: flex;
             gap: 5px;
             margin-top: 10px;
+            flex-wrap: wrap;
         }
         .random-btn {
             background: #ff9ff3;
@@ -145,6 +160,33 @@
         .refresh-btn:hover {
             background: #10ac84;
         }
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+        .context-tag {
+            display: inline-block;
+            background: #e1f0ff;
+            color: #4a90e2;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin: 2px;
+        }
+        .context-tags {
+            margin: 10px 0;
+        }
+        .add-context-btn {
+            background: #a4b0be;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        .add-context-btn:hover {
+            background: #747d8c;
+        }
     </style>
 </head>
 <body>
@@ -155,8 +197,44 @@
         <div id="authStatus"></div>
         
         <div id="memoryForm" style="display: none;">
-            <input type="file" id="photoUpload" accept="image/*">
-            <textarea id="photoStory" placeholder="Tulis cerita singkat..." rows="3"></textarea>
+            <div class="form-group">
+                <label for="photoUpload">Foto Kenangan:</label>
+                <input type="file" id="photoUpload" accept="image/*">
+                <img id="previewImage" class="preview-image" alt="Preview">
+            </div>
+            
+            <div class="form-group">
+                <label for="photoTitle">Judul Kenangan:</label>
+                <input type="text" id="photoTitle" placeholder="Judul kenangan...">
+            </div>
+            
+            <div class="form-group">
+                <label for="photoStory">Cerita/Konteks:</label>
+                <textarea id="photoStory" placeholder="Tulis cerita atau konteks kenangan ini..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="memoryContext">Konteks Tambahan:</label>
+                <select id="memoryContext">
+                    <option value="">Pilih konteks...</option>
+                    <option value="romantic">💕 Romantis</option>
+                    <option value="funny">😂 Lucu</option>
+                    <option value="adventure">🌟 Petualangan</option>
+                    <option value="family">👨‍👩‍👧 Keluarga</option>
+                    <option value="friends">👥 Teman</option>
+                    <option value="travel">✈️ Perjalanan</option>
+                    <option value="celebration">🎉 Perayaan</option>
+                    <option value="daily">📅 Harian</option>
+                </select>
+                <button class="add-context-btn" onclick="addCustomContext()">+ Tambah Konteks Lain</button>
+                <div id="customContextContainer" style="margin-top: 10px;"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="memoryDate">Tanggal Kenangan:</label>
+                <input type="date" id="memoryDate">
+            </div>
+            
             <button onclick="saveMemory()" id="saveBtn">Simpan Kenangan</button>
         </div>
         
@@ -179,6 +257,23 @@
         const supabaseUrl = 'https://dqlgejvsbsfuflejinzy.supabase.co'; // Hapus spasi
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Tambahkan quote
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Array untuk menyimpan konteks tambahan
+        let customContexts = [];
+
+        // Preview image saat dipilih
+        document.getElementById('photoUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('previewImage');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
 
         // Cek autentikasi
         async function checkAuth() {
@@ -207,6 +302,34 @@
             }
         }
 
+        // Tambah konteks kustom
+        function addCustomContext() {
+            const customContext = prompt('Masukkan konteks tambahan:');
+            if (customContext && customContext.trim()) {
+                customContexts.push(customContext.trim());
+                updateCustomContextDisplay();
+            }
+        }
+
+        // Update tampilan konteks kustom
+        function updateCustomContextDisplay() {
+            const container = document.getElementById('customContextContainer');
+            container.innerHTML = '';
+            
+            customContexts.forEach((context, index) => {
+                const contextTag = document.createElement('span');
+                contextTag.className = 'context-tag';
+                contextTag.innerHTML = `${context} <span style="cursor: pointer; color: red;" onclick="removeCustomContext(${index})">×</span>`;
+                container.appendChild(contextTag);
+            });
+        }
+
+        // Hapus konteks kustom
+        function removeCustomContext(index) {
+            customContexts.splice(index, 1);
+            updateCustomContextDisplay();
+        }
+
         async function saveMemory() {
             // Cek autentikasi dulu
             if (!await checkAuth()) {
@@ -214,10 +337,13 @@
             }
 
             const photoInput = document.getElementById("photoUpload");
+            const titleInput = document.getElementById("photoTitle");
             const storyInput = document.getElementById("photoStory");
+            const contextSelect = document.getElementById("memoryContext");
+            const dateInput = document.getElementById("memoryDate");
 
-            if (!photoInput.files[0] || storyInput.value.trim() === "") {
-                showMessage("Tambahkan foto dan cerita dulu!", 'error');
+            if (!photoInput.files[0]) {
+                showMessage("Tambahkan foto dulu!", 'error');
                 return;
             }
 
@@ -234,21 +360,33 @@
                 const reader = new FileReader();
                 reader.onload = async function(e) {
                     const photoURL = e.target.result;
+                    const title = titleInput.value.trim() || 'Kenangan Tanpa Judul';
                     const story = storyInput.value.trim();
+                    const context = contextSelect.value;
+                    const customContextsString = customContexts.join(', ');
+                    const memoryDate = dateInput.value || new Date().toISOString().split('T')[0];
 
                     // Validasi ukuran file
-                    if (photoInput.files[0].size > 3 * 1024 * 1024) { // 3MB
-                        throw new Error('Foto terlalu besar. Maksimal 3MB.');
+                    if (photoInput.files[0].size > 5 * 1024 * 1024) { // 5MB
+                        throw new Error('Foto terlalu besar. Maksimal 5MB.');
                     }
 
                     try {
+                        // Gabungkan semua konteks
+                        let allContexts = [];
+                        if (context) allContexts.push(context);
+                        if (customContextsString) allContexts.push(customContextsString);
+                        const contextString = allContexts.join(', ');
+
                         const { data, error } = await supabase
                             .from('memories')
                             .insert([{
-                                title: story.substring(0, 50), // Tambahkan title
-                                description: story, // Tambahkan description
-                                image_url: photoURL, // Gunakan field yang benar
-                                user_id: user.id, // Tambahkan user_id
+                                title: title,
+                                description: story,
+                                image_url: photoURL,
+                                context: contextString, // Tambahkan field context
+                                memory_date: memoryDate, // Tambahkan field memory_date
+                                user_id: user.id,
                                 created_at: new Date().toISOString()
                             }]);
 
@@ -261,7 +399,13 @@
                         
                         // Reset form
                         photoInput.value = "";
+                        titleInput.value = "";
                         storyInput.value = "";
+                        contextSelect.value = "";
+                        dateInput.value = "";
+                        document.getElementById('previewImage').style.display = 'none';
+                        customContexts = [];
+                        updateCustomContextDisplay();
                         
                     } catch (error) {
                         console.error("Error:", error);
@@ -292,7 +436,7 @@
                     .from('memories')
                     .select('*')
                     .order('created_at', { ascending: false })
-                    .limit(20); // Batasi untuk performa
+                    .limit(30); // Batasi untuk performa
 
                 if (error) {
                     throw error;
@@ -329,10 +473,29 @@
                 year: 'numeric'
             });
 
+            // Format memory_date jika ada
+            let memoryDateDisplay = '';
+            if (memory.memory_date) {
+                const memoryDate = new Date(memory.memory_date);
+                memoryDateDisplay = `<div class="memory-date">📅 ${memoryDate.toLocaleDateString('id-ID')}</div>`;
+            }
+
+            // Tampilkan konteks jika ada
+            let contextDisplay = '';
+            if (memory.context) {
+                const contexts = memory.context.split(',').map(ctx => ctx.trim());
+                contextDisplay = contexts.map(ctx => 
+                    `<span class="context-tag">${ctx}</span>`
+                ).join(' ');
+            }
+
             memoryDiv.innerHTML = `
-                <img src="${memory.image_url}" alt="Kenangan" onerror="this.style.display='none'">
-                <p>${memory.description || memory.title}</p>
-                <div class="memory-date">${formattedDate}</div>
+                <img src="${memory.image_url}" alt="${memory.title}" onerror="this.style.display='none'">
+                <h4 style="margin: 10px 0 5px 0; color: #333;">${memory.title}</h4>
+                ${memory.description ? `<p>${memory.description}</p>` : ''}
+                ${contextDisplay ? `<div class="context-tags">${contextDisplay}</div>` : ''}
+                ${memoryDateDisplay}
+                <div class="memory-date">🕒 ${formattedDate}</div>
                 <button class="delete-btn" onclick="deleteMemory('${memory.id}')" title="Hapus">🗑️</button>
             `;
             
@@ -373,7 +536,7 @@
                 const { data, error } = await supabase
                     .from('memories')
                     .select('*')
-                    .limit(1);
+                    .limit(50); // Ambil lebih banyak untuk random yang lebih baik
 
                 if (error) {
                     throw error;
@@ -382,38 +545,4 @@
                 if (data && data.length > 0) {
                     // Pilih memory acak dari data yang ada
                     const randomIndex = Math.floor(Math.random() * data.length);
-                    const randomMemory = data[randomIndex];
-                    alert("📸 Random Memory:\n" + (randomMemory.description || randomMemory.title));
-                } else {
-                    alert("Belum ada kenangan untuk ditampilkan.");
-                }
-                
-            } catch (error) {
-                console.error("Error:", error);
-                showMessage("Gagal mendapatkan kenangan acak: " + error.message, 'error');
-            }
-        }
-
-        function showMessage(text, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.innerHTML = text;
-            messageDiv.className = type;
-            
-            // Auto hide pesan setelah 3 detik
-            setTimeout(() => {
-                messageDiv.innerHTML = '';
-                messageDiv.className = '';
-            }, 3000);
-        }
-
-        // Load memories on page load
-        window.addEventListener('load', async function() {
-            await checkAuth();
-            loadMemories();
-        });
-
-        // Refresh data setiap 30 detik
-        setInterval(loadMemories, 30000);
-    </script>
-</body>
-</html>
+                    const randomMemory = data[randomI
