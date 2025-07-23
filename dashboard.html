@@ -4,184 +4,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-
+    <!-- Tambahkan Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #d0e8ff; /* Warna biru */
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 400px;
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 50px auto;
-            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
-            position: relative;
-            z-index: 2;
-        }
-
-        .header {
-            font-size: 20px;
-            font-weight: bold;
-            color: #3a3a3a;
-            margin-bottom: 10px;
-        }
-
-        .profile img {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #89c2ff;
-        }
-
-        .live-time {
-            font-size: 16px;
-            color: #555;
-            margin-top: 5px;
-        }
-
-        .menu button {
-            background: #89c2ff;
-            color: white;
-            border: none;
-            padding: 12px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 10px;
-            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2);
-            margin-top: 10px;
-        }
-
-        .menu button:hover {
-            background: #63a4ff;
-        }
-
-        /* Pemutar Lagu */
-        .music-player {
-            background: #fff;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .music-cover {
-            width: 50px;
-            height: 50px;
+        /* ... CSS yang sudah ada ... */
+        
+        /* Tambahkan style untuk status koneksi */
+        .connection-status {
+            padding: 10px;
+            margin: 10px 0;
             border-radius: 5px;
-        }
-
-        .music-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .music-artist {
             font-size: 12px;
-            color: #666;
         }
-
-        .play-button {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #3a3a3a;
+        
+        .connection-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
         }
-
-        /* Animasi SpongeBob */
-        .spongebob {
-            position: absolute;
-            width: 100px;
-            bottom: 20px;
-            left: 0;
-            animation: moveSpongeBob 5s linear infinite alternate;
-        }
-
-        @keyframes moveSpongeBob {
-            0% { left: 0; transform: scaleX(1); }
-            100% { left: 100%; transform: scaleX(-1); }
+        
+        .connection-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
     </style>
 </head>
 <body>
-
-    <div class="container">
-        <div class="header">Dashboard</div>
-
-        <div class="profile">
-            <img src="kita.jpg" alt="Profile Picture">
-            <div class="live-time" id="liveTime"></div>
-        </div>
-
-        <div class="menu">
-            <button onclick="location.href='letters.html'">Letters</button>
-            <button onclick="location.href='memories.html'">Our Memories</button>
-            <button onclick="location.href='photobooth.html'">Photobooth</button>
-              <button onclick="location.href='dream_together.html'">Dream together</button>
-              <button onclick="location.href='diarybersama.html'">Diary bersama</button>
-        </div>
-
-        <!-- Pemutar Lagu -->
-        <div class="music-player">
-            <img src="MUSIC_COVER.jpg" class="music-cover" alt="Cover">
-            <div class="music-info">
-                <div class="music-title">Risalah Hati</div>
-                <div class="music-artist">Dewa 19</div>
-            </div>
-            <button class="play-button" onclick="toggleMusic()">▶</button>
-        </div>
-
-        <audio id="music">
-            <source src="risalah-hati.mp3" type="audio/mpeg">
-        </audio>
-    </div>
-
-    <!-- SpongeBob Animasi -->
-    <img src="aan.png" class="spongebob" alt="SpongeBob">
-
+    <!-- ... HTML yang sudah ada ... -->
+    
+    <!-- Tambahkan status koneksi -->
+    <div id="connectionStatus" class="connection-status" style="display: none;"></div>
+    
     <script>
-        function updateLiveTime() {
-            const startDate = new Date("2023-12-02T19:12:00");
-            const now = new Date();
-            const diff = now - startDate;
+        // KONFIGURASI SUPABASE - GANTI DENGAN DATA ANDA
+        const SUPABASE_URL = 'https://dqlgejvsbsfuflejinzy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU';
+        
+        // Inisialisasi Supabase Client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-            const minutes = Math.floor((diff / (1000 * 60)) % 60);
-            const seconds = Math.floor((diff / 1000) % 60);
-
-            document.getElementById("liveTime").innerText = 
-                `${days} Hari, ${hours} Jam, ${minutes} Menit, ${seconds} Detik`;
-        }
-        setInterval(updateLiveTime, 1000);
-        updateLiveTime();
-
-        function toggleMusic() {
-            const music = document.getElementById("music");
-            const playButton = document.querySelector(".play-button");
-
-            if (music.paused) {
-                music.play();
-                playButton.innerText = "⏸";
-            } else {
-                music.pause();
-                playButton.innerText = "▶";
+        // Cek koneksi dan autentikasi
+        async function checkConnection() {
+            try {
+                // Cek user session
+                const {  { user } } = await supabase.auth.getUser();
+                
+                if (!user) {
+                    alert('Anda belum login! Mengarahkan ke halaman login...');
+                    window.location.href = 'login.html';
+                    return false;
+                }
+                
+                // Cek koneksi database
+                const { data, error } = await supabase.from('memories').select('id').limit(1);
+                
+                if (error && error.code !== '42P01') { // 42P01 = table not found (tabel belum dibuat)
+                    throw error;
+                }
+                
+                document.getElementById('connectionStatus').innerHTML = 
+                    `Terhubung sebagai: ${user.email}`;
+                document.getElementById('connectionStatus').className = 'connection-status connection-success';
+                document.getElementById('connectionStatus').style.display = 'block';
+                
+                return true;
+                
+            } catch (error) {
+                console.error('Koneksi error:', error);
+                document.getElementById('connectionStatus').innerHTML = 
+                    `Error koneksi: ${error.message}`;
+                document.getElementById('connectionStatus').className = 'connection-status connection-error';
+                document.getElementById('connectionStatus').style.display = 'block';
+                return false;
             }
         }
-    </script>
 
+        // Jalankan pengecekan saat halaman dimuat
+        window.addEventListener('load', checkConnection);
+
+        // Function untuk menyimpan diary bersama
+        async function saveDiaryBersama(content) {
+            try {
+                const {  { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('User tidak ditemukan');
+                
+                const { data, error } = await supabase
+                    .from('diary_entries')
+                    .insert([
+                        {
+                            content: content,
+                            user_id: user.id,
+                            created_at: new Date()
+                        }
+                    ]);
+                
+                if (error) throw error;
+                return data;
+            } catch (error) {
+                console.error('Error menyimpan diary:', error);
+                throw error;
+            }
+        }
+
+        // Function untuk menyimpan memory
+        async function saveMemory(title, description, image_url = null) {
+            try {
+                const {  { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('User tidak ditemukan');
+                
+                const { data, error } = await supabase
+                    .from('memories')
+                    .insert([
+                        {
+                            title: title,
+                            description: description,
+                            image_url: image_url,
+                            user_id: user.id,
+                            created_at: new Date()
+                        }
+                    ]);
+                
+                if (error) throw error;
+                return data;
+            } catch (error) {
+                console.error('Error menyimpan memory:', error);
+                throw error;
+            }
+        }
+
+        // Function untuk menyimpan letter
+        async function saveLetter(title, content, recipient) {
+            try {
+                const {  { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('User tidak ditemukan');
+                
+                const { data, error } = await supabase
+                    .from('letters')
+                    .insert([
+                        {
+                            title: title,
+                            content: content,
+                            recipient: recipient,
+                            user_id: user.id,
+                            created_at: new Date()
+                        }
+                    ]);
+                
+                if (error) throw error;
+                return data;
+            } catch (error) {
+                console.error('Error menyimpan letter:', error);
+                throw error;
+            }
+        }
+
+        // ... script yang sudah ada ...
+    </script>
 </body>
 </html>
