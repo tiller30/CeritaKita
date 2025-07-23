@@ -10,6 +10,7 @@
             background-color: #ffebf0;
             text-align: center;
             padding: 20px;
+            margin: 0;
         }
         .container {
             max-width: 400px;
@@ -17,7 +18,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
-            margin: auto;
+            margin: 20px auto;
         }
         textarea {
             width: 100%;
@@ -26,49 +27,107 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             resize: none;
+            box-sizing: border-box;
         }
         select, input[type="file"] {
             margin-top: 10px;
             width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
         }
         button {
             background: #ff6b81;
             color: white;
             border: none;
-            padding: 10px;
-            margin-top: 10px;
+            padding: 12px 20px;
+            margin-top: 15px;
             border-radius: 5px;
             cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+        button:hover {
+            background: #ff526b;
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
         }
         .entry {
             background: #fff;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
             box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
             text-align: left;
             position: relative;
+            border-left: 4px solid #ff6b81;
         }
         .entry img {
             width: 100%;
             border-radius: 5px;
-            margin-top: 5px;
+            margin-top: 10px;
+            max-height: 300px;
+            object-fit: cover;
         }
         .entry audio {
             width: 100%;
-            margin-top: 5px;
+            margin-top: 10px;
         }
         .delete-btn {
             position: absolute;
-            top: 5px;
-            right: 5px;
-            background: red;
+            top: 10px;
+            right: 10px;
+            background: #ff4757;
             color: white;
             border: none;
-            padding: 5px;
+            padding: 6px 10px;
             font-size: 12px;
             cursor: pointer;
+            border-radius: 4px;
+        }
+        .delete-btn:hover {
+            background: #ff3742;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
             border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .mood-display {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .entry-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .entry-date {
+            font-size: 12px;
+            color: #666;
+        }
+        .login-prompt {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
         }
     </style>
 </head>
@@ -76,117 +135,227 @@
     <div class="container">
         <h2>Diary Bersama 💕</h2>
         <p>Cerita harian kita bersama!</p>
-        <textarea id="diaryText" placeholder="Tulis cerita hari ini..."></textarea>
         
-        <label for="mood">Pilih Mood:</label>
-        <select id="mood">
-            <option value="😊">😊 Senang</option>
-            <option value="😍">😍 Romantis</option>
-            <option value="😢">😢 Sedih</option>
-            <option value="😡">😡 Kesal</option>
-            <option value="😂">😂 Lucu</option>
-        </select>
-        <label for="imageUpload">Tambah Foto:</label>
-        <input type="file" id="imageUpload" accept="image/*">
-        <label for="audioUpload">Tambah Suara:</label>
-        <input type="file" id="audioUpload" accept="audio/*">
-        <button onclick="saveDiary()">Simpan</button>
+        <div id="authStatus"></div>
+        
+        <div id="diaryForm" style="display: none;">
+            <textarea id="diaryText" placeholder="Tulis cerita hari ini..."></textarea>
+            
+            <label for="mood">Pilih Mood:</label>
+            <select id="mood">
+                <option value="😊">😊 Senang</option>
+                <option value="😍">😍 Romantis</option>
+                <option value="😢">😢 Sedih</option>
+                <option value="😡">😡 Kesal</option>
+                <option value="😂">😂 Lucu</option>
+                <option value="😴">😴 Lelah</option>
+                <option value="🥰">🥰 Sayang</option>
+            </select>
+            
+            <label for="imageUpload">Tambah Foto:</label>
+            <input type="file" id="imageUpload" accept="image/*">
+            
+            <label for="audioUpload">Tambah Suara:</label>
+            <input type="file" id="audioUpload" accept="audio/*">
+            
+            <button onclick="saveDiary()" id="saveBtn">Simpan</button>
+        </div>
+        
         <h3>📖 Catatan Sebelumnya:</h3>
-        <div id="diaryEntries"></div>
+        <div id="diaryEntries">
+            <div class="loading">Memuat diary...</div>
+        </div>
+        
+        <div id="message"></div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Inisialisasi Supabase Client
-        const supabaseUrl = 'https://dqlgejvsbsfuflejinzy.supabase.co'; // Ganti dengan URL proyek Anda
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Ganti dengan anon key dari Supabase
+        // Inisialisasi Supabase Client - KOREKSI SPASI
+        const supabaseUrl = 'https://dqlgejvsbsfuflejinzy.supabase.co'; // Hapus spasi
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Hapus spasi
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+        // Cek autentikasi
+        async function checkAuth() {
+            try {
+                const {  { user } } = await supabase.auth.getUser();
+                
+                if (!user) {
+                    document.getElementById('authStatus').innerHTML = `
+                        <div class="login-prompt">
+                            <p>Anda harus login untuk menggunakan diary bersama!</p>
+                            <button onclick="window.location.href='login.html'">Login</button>
+                        </div>
+                    `;
+                    document.getElementById('diaryForm').style.display = 'none';
+                    document.getElementById('diaryEntries').innerHTML = '';
+                    return false;
+                } else {
+                    document.getElementById('authStatus').innerHTML = '';
+                    document.getElementById('diaryForm').style.display = 'block';
+                    return true;
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                showMessage('Error autentikasi: ' + error.message, 'error');
+                return false;
+            }
+        }
+
         async function saveDiary() {
-            const text = document.getElementById("diaryText").value;
+            // Cek autentikasi dulu
+            if (!await checkAuth()) {
+                return;
+            }
+
+            const text = document.getElementById("diaryText").value.trim();
             const mood = document.getElementById("mood").value;
             const imageInput = document.getElementById("imageUpload").files[0];
             const audioInput = document.getElementById("audioUpload").files[0];
 
             if (!text) {
-                alert("Tuliskan sesuatu dulu!");
+                showMessage("Tuliskan sesuatu dulu!", 'error');
                 return;
             }
 
-            let imageBase64 = null;
-            let audioBase64 = null;
-
-            if (imageInput) {
-                imageBase64 = await convertFileToBase64(imageInput);
-            }
-            if (audioInput) {
-                audioBase64 = await convertFileToBase64(audioInput);
-            }
+            // Disable tombol saat menyimpan
+            const saveBtn = document.getElementById("saveBtn");
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Menyimpan...";
 
             try {
+                let imageBase64 = null;
+                let audioBase64 = null;
+
+                if (imageInput) {
+                    imageBase64 = await convertFileToBase64(imageInput);
+                }
+                if (audioInput) {
+                    audioBase64 = await convertFileToBase64(audioInput);
+                }
+
+                // Dapatkan user ID
+                const {  { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('User tidak ditemukan');
+
+                // Simpan ke database dengan struktur yang benar
                 const { data, error } = await supabase
                     .from('diary_entries')
-                    .insert([{ text: text, mood: mood, image: imageBase64, audio: audioBase64 }]);
+                    .insert([{
+                        content: text,
+                        mood: mood,
+                        image_url: imageBase64,
+                        audio_url: audioBase64,
+                        user_id: user.id, // Tambahkan user_id
+                        created_at: new Date().toISOString()
+                    }]);
 
                 if (error) {
                     throw error;
                 }
 
-                alert("Catatan berhasil disimpan!");
+                showMessage("Catatan berhasil disimpan!", 'success');
                 loadDiary();
+                
+                // Reset form
                 document.getElementById("diaryText").value = "";
                 document.getElementById("imageUpload").value = "";
                 document.getElementById("audioUpload").value = "";
+                
             } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal menyimpan catatan.");
+                console.error("Error:", error);
+                showMessage("Gagal menyimpan catatan: " + error.message, 'error');
+            } finally {
+                // Enable tombol kembali
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Simpan";
             }
         }
 
         async function loadDiary() {
             try {
+                // Cek autentikasi
+                if (!await checkAuth()) {
+                    return;
+                }
+
                 const { data, error } = await supabase
                     .from('diary_entries')
                     .select('*')
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .limit(20); // Batasi untuk performa
 
                 if (error) {
                     throw error;
                 }
 
                 const diaryContainer = document.getElementById("diaryEntries");
-                diaryContainer.innerHTML = "";
+                
+                if (data.length === 0) {
+                    diaryContainer.innerHTML = '<div class="loading">Belum ada catatan diary. Tulis yang pertama!</div>';
+                    return;
+                }
 
+                diaryContainer.innerHTML = "";
                 data.forEach(entry => displayDiary(entry));
+                
             } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal memuat catatan.");
+                console.error("Error:", error);
+                document.getElementById("diaryEntries").innerHTML = 
+                    `<div class="error">Gagal memuat catatan: ${error.message}</div>`;
             }
         }
 
         function displayDiary(entry) {
+            const diaryContainer = document.getElementById("diaryEntries");
+            
             const entryDiv = document.createElement("div");
             entryDiv.classList.add("entry");
+            
+            // Format tanggal
+            const date = new Date(entry.created_at);
+            const formattedDate = date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
 
-            let entryContent = `<p>${entry.mood} ${entry.text}</p>`;
+            let entryContent = `
+                <div class="entry-header">
+                    <span class="mood-display">${entry.mood}</span>
+                    <div>
+                        <div>${entry.content}</div>
+                        <div class="entry-date">${formattedDate}</div>
+                    </div>
+                </div>
+            `;
 
-            if (entry.image) {
-                entryContent += `<img src="${entry.image}" alt="Foto kenangan">`;
+            if (entry.image_url) {
+                entryContent += `<img src="${entry.image_url}" alt="Foto kenangan" onerror="this.style.display='none'">`;
             }
-            if (entry.audio) {
-                entryContent += `<audio controls><source src="${entry.audio}" type="audio/mpeg">Your browser does not support the audio tag.</audio>`;
+            if (entry.audio_url) {
+                entryContent += `<audio controls><source src="${entry.audio_url}" type="audio/mpeg">Browser Anda tidak mendukung audio.</audio>`;
             }
 
             const deleteBtn = document.createElement("button");
             deleteBtn.classList.add("delete-btn");
-            deleteBtn.innerText = "Hapus";
+            deleteBtn.innerText = "🗑️";
+            deleteBtn.title = "Hapus";
             deleteBtn.onclick = () => deleteDiary(entry.id);
 
             entryDiv.innerHTML = entryContent;
             entryDiv.appendChild(deleteBtn);
-            document.getElementById("diaryEntries").appendChild(entryDiv);
+            diaryContainer.appendChild(entryDiv);
         }
 
         async function deleteDiary(id) {
+            if (!confirm('Yakin ingin menghapus catatan ini?')) {
+                return;
+            }
+
             try {
                 const { error } = await supabase
                     .from('diary_entries')
@@ -197,16 +366,22 @@
                     throw error;
                 }
 
-                alert("Catatan berhasil dihapus!");
+                showMessage("Catatan berhasil dihapus!", 'success');
                 loadDiary();
             } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal menghapus catatan.");
+                console.error("Error:", error);
+                showMessage("Gagal menghapus catatan: " + error.message, 'error');
             }
         }
 
         function convertFileToBase64(file) {
             return new Promise((resolve, reject) => {
+                // Batasi ukuran file (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    reject(new Error('File terlalu besar. Maksimal 5MB.'));
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);
                 reader.onerror = () => reject(reader.error);
@@ -214,8 +389,26 @@
             });
         }
 
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = text;
+            messageDiv.className = type;
+            
+            // Auto hide pesan setelah 3 detik
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+                messageDiv.className = '';
+            }, 3000);
+        }
+
         // Load diary entries on page load
-        window.onload = loadDiary;
+        window.addEventListener('load', async function() {
+            await checkAuth();
+            loadDiary();
+        });
+
+        // Refresh data setiap 30 detik
+        setInterval(loadDiary, 30000);
     </script>
 </body>
 </html>
