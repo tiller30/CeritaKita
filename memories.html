@@ -10,6 +10,7 @@
             background-color: #D0E8FF;
             text-align: center;
             padding: 20px;
+            margin: 0;
         }
         .container {
             max-width: 450px;
@@ -17,56 +18,132 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
-            margin: auto;
+            margin: 20px auto;
         }
         .memory {
             background: #fff;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
             box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
             text-align: left;
             position: relative;
-            animation: fadeIn 1s ease-in-out;
+            animation: fadeIn 0.5s ease-in-out;
+            border-left: 4px solid #4a90e2;
+            transition: all 0.3s ease;
+        }
+        .memory:hover {
+            transform: translateY(-3px);
+            box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
         }
         .memory img {
             width: 100%;
             border-radius: 5px;
+            max-height: 300px;
+            object-fit: cover;
         }
         .memory p {
             font-style: italic;
             color: #555;
+            margin: 10px 0;
+            line-height: 1.4;
         }
         .delete-btn {
             position: absolute;
             top: 10px;
             right: 10px;
-            background: red;
+            background: #ff4757;
             color: white;
             border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
+            padding: 6px 10px;
+            border-radius: 4px;
             cursor: pointer;
+            font-size: 12px;
+        }
+        .delete-btn:hover {
+            background: #ff3742;
         }
         input, textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin-top: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
+            box-sizing: border-box;
         }
         button {
             background: #4a90e2;
             color: white;
             border: none;
-            padding: 10px;
-            margin-top: 10px;
+            padding: 12px 15px;
+            margin: 8px 4px;
             border-radius: 5px;
             cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #357ae8;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .memory-date {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        .login-prompt {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        .memory-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .random-btn {
+            background: #ff9ff3;
+        }
+        .random-btn:hover {
+            background: #f368e0;
+        }
+        .refresh-btn {
+            background: #1dd1a1;
+        }
+        .refresh-btn:hover {
+            background: #10ac84;
         }
     </style>
 </head>
@@ -74,86 +151,199 @@
     <div class="container">
         <h2>📖 Our Story 📸</h2>
         <p>Tambahkan kenangan indah dengan cerita!</p>
-        <input type="file" id="photoUpload" accept="image/*">
-        <textarea id="photoStory" placeholder="Tulis cerita singkat..."></textarea>
-        <button onclick="saveMemory()">Simpan Kenangan</button>
-        <button onclick="showRandomMemory()">🔄 Random Memory</button>
+        
+        <div id="authStatus"></div>
+        
+        <div id="memoryForm" style="display: none;">
+            <input type="file" id="photoUpload" accept="image/*">
+            <textarea id="photoStory" placeholder="Tulis cerita singkat..." rows="3"></textarea>
+            <button onclick="saveMemory()" id="saveBtn">Simpan Kenangan</button>
+        </div>
+        
+        <div style="margin: 15px 0;">
+            <button onclick="showRandomMemory()" class="random-btn">🔄 Random Memory</button>
+            <button onclick="loadMemories()" class="refresh-btn">🔁 Refresh</button>
+        </div>
+        
         <h3>Album Kenangan:</h3>
-        <div id="memoryGallery"></div>
+        <div id="memoryGallery">
+            <div class="loading">Memuat kenangan...</div>
+        </div>
+        
+        <div id="message"></div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Inisialisasi Supabase Client
-        const supabaseUrl = 'https://dqlgejvsbsfuflejinzy.supabase.co'; // Ganti dengan URL proyek Anda
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Ganti dengan anon key dari Supabase
+        // Inisialisasi Supabase Client - KOREKSI SPASI DAN QUOTE
+        const supabaseUrl = 'https://dqlgejvsbsfuflejinzy.supabase.co'; // Hapus spasi
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Tambahkan quote
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+        // Cek autentikasi
+        async function checkAuth() {
+            try {
+                const {  { user } } = await supabase.auth.getUser();
+                
+                if (!user) {
+                    document.getElementById('authStatus').innerHTML = `
+                        <div class="login-prompt">
+                            <p>Anda harus login untuk menggunakan Our Memories!</p>
+                            <button onclick="window.location.href='login.html'">Login</button>
+                        </div>
+                    `;
+                    document.getElementById('memoryForm').style.display = 'none';
+                    document.getElementById('memoryGallery').innerHTML = '';
+                    return false;
+                } else {
+                    document.getElementById('authStatus').innerHTML = '';
+                    document.getElementById('memoryForm').style.display = 'block';
+                    return true;
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                showMessage('Error autentikasi: ' + error.message, 'error');
+                return false;
+            }
+        }
+
         async function saveMemory() {
+            // Cek autentikasi dulu
+            if (!await checkAuth()) {
+                return;
+            }
+
             const photoInput = document.getElementById("photoUpload");
             const storyInput = document.getElementById("photoStory");
 
             if (!photoInput.files[0] || storyInput.value.trim() === "") {
-                alert("Tambahkan foto dan cerita dulu!");
+                showMessage("Tambahkan foto dan cerita dulu!", 'error');
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const photoURL = e.target.result;
-                const story = storyInput.value;
+            // Disable tombol saat menyimpan
+            const saveBtn = document.getElementById("saveBtn");
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Menyimpan...";
 
-                try {
-                    const { data, error } = await supabase
-                        .from('memories')
-                        .insert([{ photo: photoURL, story: story }]);
+            try {
+                // Dapatkan user ID
+                const {  { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('User tidak ditemukan');
 
-                    if (error) {
-                        throw error;
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const photoURL = e.target.result;
+                    const story = storyInput.value.trim();
+
+                    // Validasi ukuran file
+                    if (photoInput.files[0].size > 3 * 1024 * 1024) { // 3MB
+                        throw new Error('Foto terlalu besar. Maksimal 3MB.');
                     }
 
-                    alert("Kenangan berhasil disimpan!");
-                    loadMemories();
-                    photoInput.value = "";
-                    storyInput.value = "";
-                } catch (error) {
-                    console.error("Error:", error.message);
-                    alert("Gagal menyimpan kenangan.");
-                }
-            };
-            reader.readAsDataURL(photoInput.files[0]);
+                    try {
+                        const { data, error } = await supabase
+                            .from('memories')
+                            .insert([{
+                                title: story.substring(0, 50), // Tambahkan title
+                                description: story, // Tambahkan description
+                                image_url: photoURL, // Gunakan field yang benar
+                                user_id: user.id, // Tambahkan user_id
+                                created_at: new Date().toISOString()
+                            }]);
+
+                        if (error) {
+                            throw error;
+                        }
+
+                        showMessage("Kenangan berhasil disimpan!", 'success');
+                        loadMemories();
+                        
+                        // Reset form
+                        photoInput.value = "";
+                        storyInput.value = "";
+                        
+                    } catch (error) {
+                        console.error("Error:", error);
+                        showMessage("Gagal menyimpan kenangan: " + error.message, 'error');
+                    } finally {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = "Simpan Kenangan";
+                    }
+                };
+                reader.readAsDataURL(photoInput.files[0]);
+                
+            } catch (error) {
+                console.error("Error:", error);
+                showMessage("Gagal menyimpan kenangan: " + error.message, 'error');
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Simpan Kenangan";
+            }
         }
 
         async function loadMemories() {
             try {
+                // Cek autentikasi
+                if (!await checkAuth()) {
+                    return;
+                }
+
                 const { data, error } = await supabase
                     .from('memories')
                     .select('*')
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .limit(20); // Batasi untuk performa
 
                 if (error) {
                     throw error;
                 }
 
                 const gallery = document.getElementById("memoryGallery");
-                gallery.innerHTML = "";
+                
+                if (data.length === 0) {
+                    gallery.innerHTML = '<div class="loading">Belum ada kenangan. Tambahkan kenangan pertamamu!</div>';
+                    return;
+                }
 
-                data.forEach(memory => {
-                    const memoryDiv = document.createElement("div");
-                    memoryDiv.classList.add("memory");
-                    memoryDiv.innerHTML = `
-                        <img src="${memory.photo}" alt="Kenangan">
-                        <p>${memory.story}</p>
-                        <button class="delete-btn" onclick="deleteMemory(${memory.id})">Hapus</button>
-                    `;
-                    gallery.appendChild(memoryDiv);
-                });
+                gallery.innerHTML = "";
+                data.forEach(memory => displayMemory(memory));
+                
             } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal memuat kenangan.");
+                console.error("Error:", error);
+                document.getElementById("memoryGallery").innerHTML = 
+                    `<div class="error">Gagal memuat kenangan: ${error.message}</div>`;
             }
         }
 
+        function displayMemory(memory) {
+            const gallery = document.getElementById("memoryGallery");
+            
+            const memoryDiv = document.createElement("div");
+            memoryDiv.classList.add("memory");
+            
+            // Format tanggal
+            const date = new Date(memory.created_at);
+            const formattedDate = date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            memoryDiv.innerHTML = `
+                <img src="${memory.image_url}" alt="Kenangan" onerror="this.style.display='none'">
+                <p>${memory.description || memory.title}</p>
+                <div class="memory-date">${formattedDate}</div>
+                <button class="delete-btn" onclick="deleteMemory('${memory.id}')" title="Hapus">🗑️</button>
+            `;
+            
+            gallery.appendChild(memoryDiv);
+        }
+
         async function deleteMemory(id) {
+            if (!confirm('Yakin ingin menghapus kenangan ini?')) {
+                return;
+            }
+
             try {
                 const { error } = await supabase
                     .from('memories')
@@ -164,35 +354,66 @@
                     throw error;
                 }
 
-                alert("Kenangan berhasil dihapus!");
-                loadMemories(); // Reload memories after deletion
+                showMessage("Kenangan berhasil dihapus!", 'success');
+                loadMemories();
+                
             } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal menghapus kenangan.");
+                console.error("Error:", error);
+                showMessage("Gagal menghapus kenangan: " + error.message, 'error');
             }
         }
 
         async function showRandomMemory() {
             try {
+                // Cek autentikasi
+                if (!await checkAuth()) {
+                    return;
+                }
+
                 const { data, error } = await supabase
                     .from('memories')
                     .select('*')
-                    .limit(1)
-                    .single();
+                    .limit(1);
 
                 if (error) {
                     throw error;
                 }
 
-                alert("📸 Random Memory: " + data.story);
+                if (data && data.length > 0) {
+                    // Pilih memory acak dari data yang ada
+                    const randomIndex = Math.floor(Math.random() * data.length);
+                    const randomMemory = data[randomIndex];
+                    alert("📸 Random Memory:\n" + (randomMemory.description || randomMemory.title));
+                } else {
+                    alert("Belum ada kenangan untuk ditampilkan.");
+                }
+                
             } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal mendapatkan kenangan acak.");
+                console.error("Error:", error);
+                showMessage("Gagal mendapatkan kenangan acak: " + error.message, 'error');
             }
         }
 
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = text;
+            messageDiv.className = type;
+            
+            // Auto hide pesan setelah 3 detik
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+                messageDiv.className = '';
+            }, 3000);
+        }
+
         // Load memories on page load
-        loadMemories();
+        window.addEventListener('load', async function() {
+            await checkAuth();
+            loadMemories();
+        });
+
+        // Refresh data setiap 30 detik
+        setInterval(loadMemories, 30000);
     </script>
 </body>
 </html>
