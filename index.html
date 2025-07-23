@@ -8,27 +8,145 @@
 </head>
 <body>
     <div class="container">
-        <input type="password" id="password" disabled>
-        <div class="keypad">
-            <div class="image-container">
-                <img src="gambar.jpg" alt="Puzzle Heart">
+        <div class="login-form">
+            <h2>Login</h2>
+            <input type="email" id="email" placeholder="Email Anda" required>
+            <input type="password" id="password" placeholder="Password" disabled>
+            <div class="keypad">
+                <div class="image-container">
+                    <img src="gambar.jpg" alt="Puzzle Heart">
+                </div>
+                <div class="buttons">
+                    <button onclick="press(1)">1</button>
+                    <button onclick="press(2)">2</button>
+                    <button onclick="press(3)">3</button>
+                    <button onclick="press(4)">4</button>
+                    <button onclick="press(5)">5</button>
+                    <button onclick="press(6)">6</button>
+                    <button onclick="press(7)">7</button>
+                    <button onclick="press(8)">8</button>
+                    <button onclick="press(9)">9</button>
+                    <button onclick="clearInput()">🔒</button>
+                    <button onclick="press(0)">0</button>
+                    <button onclick="checkLogin()">#</button>
+                </div>
             </div>
-            <div class="buttons">
-                <button onclick="press(1)">1</button>
-                <button onclick="press(2)">2</button>
-                <button onclick="press(3)">3</button>
-                <button onclick="press(4)">4</button>
-                <button onclick="press(5)">5</button>
-                <button onclick="press(6)">6</button>
-                <button onclick="press(7)">7</button>
-                <button onclick="press(8)">8</button>
-                <button onclick="press(9)">9</button>
-                <button onclick="clearInput()">🔒</button>
-                <button onclick="press(0)">0</button>
-                <button onclick="checkLogin()">#</button>
-            </div>
+            <div id="message" class="message"></div>
         </div>
     </div>
-    <script src="script.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Inisialisasi Supabase
+        const supabase = window.supabase.createClient(
+            'https://dqlgejvsbsfuflejinzy.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'
+        );
+
+        let password = '';
+
+        function press(num) {
+            password += num;
+            document.getElementById('password').value = '*'.repeat(password.length);
+        }
+
+        function clearInput() {
+            password = '';
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('message').textContent = '';
+        }
+
+        async function checkLogin() {
+            const email = document.getElementById('email').value;
+            
+            if (!email || !password) {
+                showMessage('Email dan password harus diisi!', 'error');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+                
+                if (error) throw error;
+                
+                if (data.user) {
+                    showMessage('Login berhasil! Mengarahkan...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                showMessage('Login gagal: ' + error.message, 'error');
+                clearInput();
+            }
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+        }
+
+        // Allow Enter key to submit
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkLogin();
+            }
+        });
+    </script>
+    
+    <style>
+        .login-form {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .login-form h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        #email, #password {
+            width: 80%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .message {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+    </style>
 </body>
-</html>
+    </html>
