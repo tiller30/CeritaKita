@@ -10,6 +10,7 @@
             background-color: #D0E8FF;
             text-align: center;
             padding: 20px;
+            margin: 0;
         }
         .container {
             max-width: 500px;
@@ -17,56 +18,139 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
-            margin: auto;
+            margin: 20px auto;
         }
         .dream-board {
             margin-top: 20px;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
             justify-content: center;
         }
         .dream {
             background: #fff;
-            padding: 10px;
+            padding: 15px;
             border-radius: 10px;
             box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
             width: 150px;
             text-align: center;
             position: relative;
-            animation: fadeIn 1s ease-in-out;
+            animation: fadeIn 0.5s ease-in-out;
+            border: 2px solid #4a90e2;
+            transition: all 0.3s ease;
+        }
+        .dream:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.2);
         }
         .dream img {
             width: 100%;
             border-radius: 5px;
+            height: 100px;
+            object-fit: cover;
         }
         .dream p {
             font-style: italic;
             color: #555;
+            font-size: 12px;
+            margin: 8px 0;
+            min-height: 40px;
         }
         .completed {
             background: #A7D397;
             border: 2px solid green;
         }
+        .completed img {
+            opacity: 0.7;
+        }
+        .completed::after {
+            content: "✅";
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 16px;
+        }
         input, textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin-top: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
+            box-sizing: border-box;
         }
         button {
             background: #4a90e2;
             color: white;
             border: none;
-            padding: 10px;
-            margin-top: 10px;
+            padding: 12px 15px;
+            margin: 8px 4px;
             border-radius: 5px;
             cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #357ae8;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .delete-btn {
+            background: #ff4757;
+            padding: 6px 10px;
+            font-size: 12px;
+            margin: 5px 2px;
+        }
+        .complete-btn {
+            background: #2ed573;
+            padding: 6px 10px;
+            font-size: 12px;
+            margin: 5px 2px;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .dream-date {
+            font-size: 10px;
+            color: #888;
+            margin-top: 5px;
+        }
+        .login-prompt {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .confetti {
+            position: fixed;
+            font-size: 30px;
+            z-index: 1000;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -74,94 +158,204 @@
     <div class="container">
         <h2>🎨 Dream Together 🌟</h2>
         <p>Buat papan impian bersama!</p>
-        <input type="file" id="dreamImage" accept="image/*">
-        <textarea id="dreamText" placeholder="Tulis impian..."></textarea>
-        <button onclick="saveDream()">Tambahkan Impian</button>
-        <button onclick="showDailyMotivation()">🌟 Daily Motivation</button>
-        <button onclick="clearDreams()">🗑️ Hapus Semua</button>
+        
+        <div id="authStatus"></div>
+        
+        <div id="dreamForm" style="display: none;">
+            <input type="file" id="dreamImage" accept="image/*">
+            <textarea id="dreamText" placeholder="Tulis impian..." rows="3"></textarea>
+            <button onclick="saveDream()" id="saveBtn">Tambahkan Impian</button>
+        </div>
+        
+        <div style="margin: 15px 0;">
+            <button onclick="showDailyMotivation()">🌟 Daily Motivation</button>
+            <button onclick="loadDreams()">🔄 Refresh</button>
+        </div>
+        
         <h3>Papan Impian:</h3>
-        <div id="dreamBoard" class="dream-board"></div>
+        <div id="dreamBoard" class="dream-board">
+            <div class="loading">Memuat impian...</div>
+        </div>
+        
+        <div id="message"></div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Inisialisasi Supabase Client
-        const supabaseUrl = 'https://dqlgejvsbsfuflejinzy.supabase.co'; // Ganti dengan URL proyek Anda
-        const supabaseKey = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Ganti dengan anon key dari Supabase
+        // Inisialisasi Supabase Client - KOREKSI SPASI DAN QUOTE
+        const supabaseUrl = 'https://dqlgejvsbsfuflejinzy.supabase.co'; // Hapus spasi
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxbGdlanZzYnNmdWZsZWppbnp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5NDk2ODgsImV4cCI6MjA1NTUyNTY4OH0.a2sLVozmtkPNdU4bWOnLv3swgEe1tFYy7qmOTwdzigU'; // Tambahkan quote
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+        // Cek autentikasi
+        async function checkAuth() {
+            try {
+                const {  { user } } = await supabase.auth.getUser();
+                
+                if (!user) {
+                    document.getElementById('authStatus').innerHTML = `
+                        <div class="login-prompt">
+                            <p>Anda harus login untuk menggunakan Dream Together!</p>
+                            <button onclick="window.location.href='login.html'">Login</button>
+                        </div>
+                    `;
+                    document.getElementById('dreamForm').style.display = 'none';
+                    document.getElementById('dreamBoard').innerHTML = '';
+                    return false;
+                } else {
+                    document.getElementById('authStatus').innerHTML = '';
+                    document.getElementById('dreamForm').style.display = 'block';
+                    return true;
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                showMessage('Error autentikasi: ' + error.message, 'error');
+                return false;
+            }
+        }
+
         async function saveDream() {
+            // Cek autentikasi dulu
+            if (!await checkAuth()) {
+                return;
+            }
+
             const imageInput = document.getElementById("dreamImage");
             const textInput = document.getElementById("dreamText");
 
             if (!imageInput.files[0] || textInput.value.trim() === "") {
-                alert("Tambahkan gambar dan impian dulu!");
+                showMessage("Tambahkan gambar dan impian dulu!", 'error');
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = async function(event) {
-                const imageUrl = event.target.result;
-                const text = textInput.value;
+            // Disable tombol saat menyimpan
+            const saveBtn = document.getElementById("saveBtn");
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Menyimpan...";
 
-                try {
-                    const { data, error } = await supabase
-                        .from('dreams')
-                        .insert([{ image: imageUrl, text: text, completed: false }]);
+            try {
+                // Dapatkan user ID
+                const {  { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error('User tidak ditemukan');
 
-                    if (error) {
-                        throw error;
+                const reader = new FileReader();
+                reader.onload = async function(event) {
+                    const imageUrl = event.target.result;
+                    const text = textInput.value.trim();
+
+                    // Validasi ukuran file
+                    if (imageInput.files[0].size > 2 * 1024 * 1024) { // 2MB
+                        throw new Error('Gambar terlalu besar. Maksimal 2MB.');
                     }
 
-                    alert("Impian berhasil ditambahkan!");
-                    loadDreams();
-                    imageInput.value = "";
-                    textInput.value = "";
-                } catch (error) {
-                    console.error("Error:", error.message);
-                    alert("Gagal menambahkan impian.");
-                }
-            };
-            reader.readAsDataURL(imageInput.files[0]);
+                    try {
+                        const { data, error } = await supabase
+                            .from('dreams')
+                            .insert([{
+                                title: text.substring(0, 50), // Tambahkan title
+                                description: text, // Tambahkan description
+                                image_url: imageUrl, // Gunakan field yang benar
+                                is_achieved: false, // Gunakan field yang benar
+                                user_id: user.id, // Tambahkan user_id
+                                created_at: new Date().toISOString()
+                            }]);
+
+                        if (error) {
+                            throw error;
+                        }
+
+                        showMessage("Impian berhasil ditambahkan!", 'success');
+                        loadDreams();
+                        
+                        // Reset form
+                        imageInput.value = "";
+                        textInput.value = "";
+                        
+                    } catch (error) {
+                        console.error("Error:", error);
+                        showMessage("Gagal menambahkan impian: " + error.message, 'error');
+                    } finally {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = "Tambahkan Impian";
+                    }
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+                
+            } catch (error) {
+                console.error("Error:", error);
+                showMessage("Gagal menambahkan impian: " + error.message, 'error');
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Tambahkan Impian";
+            }
         }
 
         async function loadDreams() {
             try {
+                // Cek autentikasi
+                if (!await checkAuth()) {
+                    return;
+                }
+
                 const { data, error } = await supabase
                     .from('dreams')
                     .select('*')
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .limit(20); // Batasi untuk performa
 
                 if (error) {
                     throw error;
                 }
 
                 const dreamBoard = document.getElementById("dreamBoard");
-                dreamBoard.innerHTML = "";
+                
+                if (data.length === 0) {
+                    dreamBoard.innerHTML = '<div class="loading">Belum ada impian. Tambahkan impian pertamamu!</div>';
+                    return;
+                }
 
+                dreamBoard.innerHTML = "";
                 data.forEach((dream, index) => displayDream(dream, index));
+                
             } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal memuat impian.");
+                console.error("Error:", error);
+                document.getElementById("dreamBoard").innerHTML = 
+                    `<div class="error">Gagal memuat impian: ${error.message}</div>`;
             }
         }
 
         function displayDream(dreamData, index) {
+            const dreamBoard = document.getElementById("dreamBoard");
+            
             const dreamDiv = document.createElement("div");
             dreamDiv.classList.add("dream");
-            if (dreamData.completed) dreamDiv.classList.add("completed");
+            if (dreamData.is_achieved) dreamDiv.classList.add("completed");
+            
+            // Format tanggal
+            const date = new Date(dreamData.created_at);
+            const formattedDate = date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short'
+            });
+
             dreamDiv.innerHTML = `
-                <img src="${dreamData.image}" alt="Impian">
-                <p>${dreamData.text}</p>
-                <button onclick="markAsCompleted(${dreamData.id})">✅ Tercapai</button>
+                <img src="${dreamData.image_url}" alt="Impian" onerror="this.style.display='none'">
+                <p>${dreamData.description || dreamData.title}</p>
+                <div class="dream-date">${formattedDate}</div>
+                ${!dreamData.is_achieved ? 
+                    `<button class="complete-btn" onclick="markAsCompleted('${dreamData.id}')">✅ Tercapai</button>` : 
+                    `<div style="font-size: 10px; color: green;">TERCAPAI ✅</div>`
+                }
+                <button class="delete-btn" onclick="deleteDream('${dreamData.id}')">🗑️</button>
             `;
-            document.getElementById("dreamBoard").appendChild(dreamDiv);
+            
+            dreamBoard.appendChild(dreamDiv);
         }
 
         async function markAsCompleted(id) {
             try {
                 const { error } = await supabase
                     .from('dreams')
-                    .update({ completed: true })
+                    .update({ is_achieved: true })
                     .eq('id', id);
 
                 if (error) {
@@ -169,26 +363,65 @@
                 }
 
                 showConfetti();
+                showMessage("Impian ditandai sebagai tercapai!", 'success');
                 loadDreams();
+                
             } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal menandai impian sebagai tercapai.");
+                console.error("Error:", error);
+                showMessage("Gagal menandai impian: " + error.message, 'error');
+            }
+        }
+
+        async function deleteDream(id) {
+            if (!confirm('Yakin ingin menghapus impian ini?')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('dreams')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    throw error;
+                }
+
+                showMessage("Impian berhasil dihapus!", 'success');
+                loadDreams();
+                
+            } catch (error) {
+                console.error("Error:", error);
+                showMessage("Gagal menghapus impian: " + error.message, 'error');
             }
         }
 
         function showConfetti() {
-            const confetti = document.createElement("div");
-            confetti.innerHTML = "🎉✨";
-            confetti.style.position = "fixed";
-            confetti.style.top = "50%";
-            confetti.style.left = "50%";
-            confetti.style.transform = "translate(-50%, -50%)";
-            confetti.style.fontSize = "50px";
-            confetti.style.animation = "fadeOut 1.5s forwards";
-            document.body.appendChild(confetti);
-            setTimeout(() => {
-                confetti.remove();
-            }, 1500);
+            const emojis = ['🎉', '✨', '🎊', '🌟', '💫'];
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement("div");
+                confetti.className = "confetti";
+                confetti.innerHTML = emojis[Math.floor(Math.random() * emojis.length)];
+                confetti.style.left = Math.random() * 100 + "vw";
+                confetti.style.top = "-50px";
+                confetti.style.color = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.fontSize = (Math.random() * 20 + 20) + "px";
+                
+                document.body.appendChild(confetti);
+                
+                // Animate confetti
+                const animation = confetti.animate([
+                    { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                    { transform: `translateY(${window.innerHeight + 100}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                ], {
+                    duration: Math.random() * 3000 + 2000,
+                    easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)'
+                });
+                
+                animation.onfinish = () => confetti.remove();
+            }
         }
 
         async function showDailyMotivation() {
@@ -196,40 +429,52 @@
                 const { data, error } = await supabase
                     .from('dreams')
                     .select('*')
-                    .limit(1)
-                    .single();
+                    .eq('is_achieved', true) // Ambil impian yang sudah tercapai
+                    .limit(1);
 
                 if (error) {
                     throw error;
                 }
 
-                alert("🌟 Daily Motivation: " + data.text);
+                if (data && data.length > 0) {
+                    alert("🌟 Daily Motivation:\n" + data[0].description);
+                } else {
+                    // Jika tidak ada impian tercapai, beri motivasi umum
+                    const motivasi = [
+                        "Setiap langkah kecil membawa kamu lebih dekat ke impian!",
+                        "Jangan menyerah, impianmu berharga!",
+                        "Kamu lebih kuat dari yang kamu pikir!",
+                        "Setiap hari adalah kesempatan baru untuk mewujudkan impian!"
+                    ];
+                    alert("🌟 Daily Motivation:\n" + motivasi[Math.floor(Math.random() * motivasi.length)]);
+                }
+                
             } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal mendapatkan motivasi harian.");
+                console.error("Error:", error);
+                showMessage("Gagal mendapatkan motivasi: " + error.message, 'error');
             }
         }
 
-        async function clearDreams() {
-            try {
-                const { error } = await supabase
-                    .from('dreams')
-                    .delete();
-
-                if (error) {
-                    throw error;
-                }
-
-                alert("Semua impian telah dihapus!");
-                loadDreams();
-            } catch (error) {
-                console.error("Error:", error.message);
-                alert("Gagal menghapus impian.");
-            }
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = text;
+            messageDiv.className = type;
+            
+            // Auto hide pesan setelah 3 detik
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+                messageDiv.className = '';
+            }, 3000);
         }
 
         // Load dreams on page load
-        window.onload = loadDreams;
+        window.addEventListener('load', async function() {
+            await checkAuth();
+            loadDreams();
+        });
+
+        // Refresh data setiap 30 detik
+        setInterval(loadDreams, 30000);
     </script>
 </body>
 </html>
