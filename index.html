@@ -3,33 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Keypad</title>
+    <title>Login</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 25px;
+            width: 100%;
+            max-width: 380px;
+            margin: 20px;
+        }
+        
+        .login-form {
+            text-align: center;
+        }
+        
+        .login-form h2 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 24px;
+        }
+        
+        .input-group {
+            margin: 15px 0;
+        }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .image-container {
+            margin: 20px 0;
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        
+        .login-button:active {
+            transform: scale(0.98);
+        }
+        
+        .login-button:hover:not(:disabled) {
+            background: #5a67d8;
+        }
+        
+        .login-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .message.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .user-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+            display: none;
+        }
+        
+        .user-info h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .user-info p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="login-form">
             <h2>Login</h2>
-            <input type="email" id="email" placeholder="Email Anda" required>
-            <input type="password" id="password" placeholder="Password" disabled>
-            <div class="keypad">
-                <div class="image-container">
-                    <img src="gambar.jpg" alt="Puzzle Heart">
-                </div>
-                <div class="buttons">
-                    <button onclick="press(1)">1</button>
-                    <button onclick="press(2)">2</button>
-                    <button onclick="press(3)">3</button>
-                    <button onclick="press(4)">4</button>
-                    <button onclick="press(5)">5</button>
-                    <button onclick="press(6)">6</button>
-                    <button onclick="press(7)">7</button>
-                    <button onclick="press(8)">8</button>
-                    <button onclick="press(9)">9</button>
-                    <button onclick="clearInput()">🔒</button>
-                    <button onclick="press(0)">0</button>
-                    <button onclick="checkLogin()">#</button>
-                </div>
+            
+            <div class="input-group">
+                <input type="email" id="email" placeholder="Email Anda" required autocomplete="email">
+                <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
             </div>
+            
+            <div class="image-container">
+                <img src="gambar.jpg" alt="Puzzle Heart" onerror="this.parentElement.style.display='none'">
+            </div>
+            
+            <button class="login-button" onclick="checkLogin()" id="loginBtn">Login</button>
+            
+            <div id="userInfo" class="user-info">
+                <h4>Informasi User:</h4>
+                <p>ID: <span id="userId"></span></p>
+                <p>Email: <span id="userEmail"></span></p>
+                <p>Terdaftar: <span id="userCreated"></span></p>
+            </div>
+            
             <div id="message" class="message"></div>
         </div>
     </div>
@@ -44,159 +203,146 @@
         // Inisialisasi Supabase Client
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        let password = '';
-
-        function press(num) {
-            password += num;
-            document.getElementById('password').value = '*'.repeat(password.length);
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = text;
+            messageDiv.className = 'message ' + type;
         }
 
-        function clearInput() {
-            password = '';
-            document.getElementById('email').value = '';
-            document.getElementById('password').value = '';
-            document.getElementById('message').textContent = '';
+        function hideMessage() {
+            const messageDiv = document.getElementById('message');
+            messageDiv.style.display = 'none';
+        }
+
+        function showUserInfo(user) {
+            document.getElementById('userId').textContent = user.id;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userCreated').textContent = new Date(user.created_at).toLocaleDateString('id-ID');
+            document.getElementById('userInfo').style.display = 'block';
+        }
+
+        function hideUserInfo() {
+            document.getElementById('userInfo').style.display = 'none';
+        }
+
+        function disableLoginButton() {
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="spinner"></span> Memproses...';
+        }
+
+        function enableLoginButton() {
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = 'Login';
         }
 
         async function checkLogin() {
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
             
             if (!email || !password) {
                 showMessage('Email dan password harus diisi!', 'error');
                 return;
             }
 
+            disableLoginButton();
+            showMessage('Memverifikasi kredensial...', 'info');
+            hideUserInfo();
+
             try {
+                console.log('Mencoba login dengan email:', email);
+                
                 // LOGIN KE SUPABASE
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email: email,
                     password: password,
                 });
                 
-                if (error) throw error;
+                console.log('Response login:', { data, error });
+                
+                if (error) {
+                    throw error;
+                }
                 
                 if (data.user) {
-                    showMessage('Login berhasil! Mengarahkan...', 'success');
+                    // Tampilkan informasi user
+                    showUserInfo(data.user);
+                    showMessage(`Verifikasi berhasil! UID: ${data.user.id.substring(0,8)}...`, 'success');
+                    
+                    // Simpan session info
+                    localStorage.setItem('user_id', data.user.id);
+                    localStorage.setItem('user_email', data.user.email);
+                    
+                    // Redirect dengan delay
                     setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1000);
+                        showMessage('Mengarahkan ke dashboard...', 'info');
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 1000);
+                    }, 1500);
                 }
                 
             } catch (error) {
+                console.error('Login error:', error);
                 showMessage('Login gagal: ' + error.message, 'error');
-                clearInput();
+                hideUserInfo();
+                enableLoginButton();
             }
         }
 
-        function showMessage(text, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.textContent = text;
-            messageDiv.className = 'message ' + type;
-        }
+        // Cek session saat halaman dimuat
+        window.addEventListener('load', async function() {
+            try {
+                console.log('Mengecek session yang ada...');
+                
+                // Cek apakah user sudah login
+                const { data: { user } } = await supabase.auth.getUser();
+                
+                if (user) {
+                    console.log('User sudah login:', user.id);
+                    showMessage('Sesi aktif ditemukan, mengarahkan ke dashboard...', 'info');
+                    showUserInfo(user);
+                    
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 2000);
+                } else {
+                    console.log('Tidak ada sesi aktif');
+                    showMessage('Silakan login untuk melanjutkan', 'info');
+                }
+                
+            } catch (error) {
+                console.log('Error mengecek session:', error);
+            }
+            
+            // Test file existence
+            fetch('dashboard.html')
+                .then(response => {
+                    if (response.ok) {
+                        console.log('dashboard.html ditemukan ✓');
+                    } else {
+                        console.log('dashboard.html tidak ditemukan ✗');
+                    }
+                })
+                .catch(error => {
+                    console.log('Error mengecek dashboard.html:', error);
+                });
+        });
 
         // Allow Enter key to submit
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 checkLogin();
             }
         });
+
+        // Form submission prevention
+        document.querySelector('.login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            checkLogin();
+        });
     </script>
-    
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            padding: 30px;
-            width: 90%;
-            max-width: 400px;
-        }
-        
-        .login-form {
-            text-align: center;
-        }
-        
-        .login-form h2 {
-            margin-bottom: 20px;
-            color: #333;
-            font-size: 24px;
-        }
-        
-        #email, #password {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        
-        .keypad {
-            margin: 20px 0;
-        }
-        
-        .buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        button {
-            padding: 15px;
-            font-size: 18px;
-            border: none;
-            border-radius: 8px;
-            background: #667eea;
-            color: white;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        button:hover {
-            background: #5a67d8;
-        }
-        
-        .image-container {
-            margin: 15px 0;
-        }
-        
-        .image-container img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 10px;
-        }
-        
-        .message {
-            margin: 15px 0;
-            padding: 10px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        
-        .message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-    </style>
 </body>
-    </html>
+</html>
